@@ -3,7 +3,7 @@ name: Auto Check JSON Comments
 on:
   push:
     branches:
-      - main  # Runs when pushing to the main branch
+      - master  # Runs when pushing to the main branch
   schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
