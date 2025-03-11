@@ -1,0 +1,38 @@
+name: Auto Check JSON Comments
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  feedback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bash
+          sudo apt-get update
+          sudo apt-get install -y bash jq
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+          echo "deb [arch=amd64] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install gh
+          - name: Set up R
+          uses: r-lib/actions/setup-r@v2
+
+      - name: Install R packages
+        run: |
+          Rscript -e 'install.packages("jsonlite", repos="https://cloud.r-project.org")'
+  
+      - name: Run feedback script
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          chmod +x scripts/shell/bb/bb.sh
+          ./scripts/issue_check.sh
