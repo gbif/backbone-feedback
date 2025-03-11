@@ -51,6 +51,8 @@ jobs:
           fi
 
       - name: Run issue label script
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             ls 
             chmod +x ./scripts/create_github_label.sh
