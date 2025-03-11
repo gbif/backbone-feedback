@@ -40,4 +40,13 @@ jobs:
           ls 
           chmod +x ./scripts/issue_check.sh
           ./scripts/issue_check.sh
-          
+
+      - name: Check if report.tsv exists
+        run: |
+          if [ -f "report.tsv" ]; then
+            echo "✅ report.tsv exists"
+          else
+            echo "report.tsv does not exist"
+            exit 1  # Fail the job if the file is missing
+          fi
+                    
