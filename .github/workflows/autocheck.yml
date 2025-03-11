@@ -22,7 +22,7 @@ jobs:
       - name: Install R packages
         run: |
           Rscript -e 'install.packages("jsonlite", repos="https://cloud.r-project.org")'
-          Rscript -e 'install.packages("httr", repos="https://cloud.r-project.org")'
+          Rscript -e 'install.packages("httr")'
           Rscript -e 'install.packages("dplyr", repos="https://cloud.r-project.org")'
           Rscript -e 'install.packages("purrr", repos="https://cloud.r-project.org")'
 
