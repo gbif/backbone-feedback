@@ -50,9 +50,9 @@ jobs:
             exit 1  # Fail the job if the file is missing
           fi
 
-      - name: Run issue check script
+      - name: Run issue label script
         run: |
             ls 
-            chmod +x ./scripts/create_issue_label.sh
-            ./scripts/create_issue_label.sh
+            chmod +x ./scripts/create_github_label.sh
+            ./scripts/create_github_label.sh
   
