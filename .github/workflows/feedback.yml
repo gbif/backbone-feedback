@@ -27,4 +27,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          ./scripts/issue_check.sh
+          ls -l
