@@ -27,6 +27,12 @@ for issue in "${issue_array[@]}"
 do
     echo "Processing issue: $issue"
     COMMENTS=$(curl -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/gbif/backbone-feedback/issues/$issue/comments)
+    
+    if ! echo "$COMMENTS" | jq empty; then
+        echo "Error: Invalid JSON received for issue $issue"
+        continue
+    fi
+    
     JSON=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("// json for auto-checking")) | {body}')
     COMMENT_BODY=$(echo "$JSON" | jq '.body')
     echo $COMMENT_BODY
