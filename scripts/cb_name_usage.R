@@ -17,12 +17,7 @@ cb_name_usage = function(
             purrr::pluck("usage") 
 
   usage <- tibble::as_tibble(tt)
-  
-  issues <- tt$issues
-  match <- tt$match
-  original <- tibble::as_tibble(tt$original)
-  type <- tt$type
-  
+   
   out <- list(usage = usage)
   
   return(out)

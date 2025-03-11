@@ -33,4 +33,4 @@ jobs:
           ls 
           chmod +x ./scripts/issue_check.sh
           ./scripts/issue_check.sh
-          gh issue list --search "is:issue is:open project:gbif/23" --json number --jq '.[].number' --limit 500
+          
