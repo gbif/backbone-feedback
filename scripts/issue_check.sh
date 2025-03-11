@@ -1,7 +1,7 @@
 #!/bin/bash
 
-current_dir=$(pwd)
-cd /mnt/c/Users/ftw712/Desktop/scripts/shell/bb/backbone-feedback/
+# current_dir=$(pwd)
+# cd /mnt/c/Users/ftw712/Desktop/scripts/shell/bb/backbone-feedback/
 
 # gh issue list  --search "is:issue is:open project:gbif/23"
 
@@ -9,7 +9,7 @@ issues=$(gh issue list --search "is:issue is:open project:gbif/23" --json number
 
 echo $issues
 
-cd $current_dir
+# cd $current_dir
 
 for issue in $issues; do
     issue_array+=("$issue")
