@@ -27,5 +27,3 @@ cb_name_usage = function(
   
   return(out)
 }
-
-cb_name_usage("Calopteryx splendens")

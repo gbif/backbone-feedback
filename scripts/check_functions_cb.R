@@ -17,9 +17,6 @@ if(!is.null(s$heterotypic)) ss = c(ss,s$heterotypic$label)
 return(ss)
 }
 
-
-
-
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
