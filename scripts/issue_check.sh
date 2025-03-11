@@ -30,7 +30,7 @@ do
     JSON=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("// json for auto-checking")) | {body}')
     COMMENT_BODY=$(echo "$JSON" | jq '.body')
     echo $COMMENT_BODY
-    Rscript process_json.R "$COMMENT_BODY" "$issue"
+    Rscript scripts/process_json.R "$COMMENT_BODY" "$issue"
 done
 
 
