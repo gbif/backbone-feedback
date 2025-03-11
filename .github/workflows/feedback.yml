@@ -22,8 +22,9 @@ jobs:
       - name: Install R packages
         run: |
           Rscript -e 'install.packages("jsonlite", repos="https://cloud.r-project.org")'
-          Rscript -e 'install.packages("remotes", repos="https://cloud.r-project.org")'
-          Rscript -e 'remotes::install_github("ropensci/rgbif", ref = "cb_name_usage")'
+          Rscript -e 'install.packages("httr", repos="https://cloud.r-project.org")'
+          Rscript -e 'install.packages("dplyr", repos="https://cloud.r-project.org")'
+          Rscript -e 'install.packages("purrr", repos="https://cloud.r-project.org")'
 
       - name: Run feedback script
         env:

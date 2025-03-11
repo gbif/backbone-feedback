@@ -1,3 +1,4 @@
+source("scripts/cb_name_usage.R")
 
 get_syns <- function(col_id = NULL) {
 
@@ -17,8 +18,10 @@ return(ss)
 }
 
 
+
+
 bad_name = function(xx) {
-    bn = rgbif::cb_name_usage(xx$badName)$usage 
+    bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
     if(bn$label == xx$badName) {
         out = "ISSUE_OPEN"
@@ -31,7 +34,7 @@ bad_name = function(xx) {
 # xx = list(badName="Calopteryx virgo (Linnaeus, 1758)")
 
 missing_name = function(xx) {
-    mn = rgbif::cb_name_usage(xx$missingName)$usage
+    mn = cb_name_usage(xx$missingName)$usage
 
     if(nrow(mn) == 0) return("ISSUE_OPEN")
     if(mn$label == xx$missingName) {
@@ -45,11 +48,11 @@ missing_name = function(xx) {
 # xx = list(missingName="Calopteryx virgo (Linneus, 1758)")
 
 name_change = function(xx) {
-    cn = rgbif::cb_name_usage(xx$currentName)$usage
+    cn = cb_name_usage(xx$currentName)$usage
 
     if(nrow(cn) == 0) { cn_check = FALSE } else { cn_check = cn$label == xx$currentName }
 
-    pn = rgbif::cb_name_usage(xx$proposedName)$usage 
+    pn = cb_name_usage(xx$proposedName)$usage 
 
     if(nrow(pn) == 0) return("ISSUE_OPEN")
 
@@ -70,7 +73,7 @@ name_change = function(xx) {
 
 
 wrong_group = function(xx) {
-n = rgbif::cb_name_usage(xx$name)
+n = cb_name_usage(xx$name)
 
 if(!n$usage$label == xx$name) {
     message("Name not found in the backbone")
@@ -109,7 +112,7 @@ if(is.null(rg)) {
 }
 
 syn_issue = function(xx) {
-    n = rgbif::cb_name_usage(xx$name)
+    n = cb_name_usage(xx$name)
     
     cat("col names: ",n$usage$label,"\n")
     cat("col status: ",n$usage$status,"\n")
@@ -121,7 +124,7 @@ syn_issue = function(xx) {
     }
     
     if(!is.null(xx$rightParent)) {
-        nrp = rgbif::cb_name_usage(xx$rightParent)
+        nrp = cb_name_usage(xx$rightParent)
         if(!nrp$usage$label == xx$rightParent) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
@@ -131,7 +134,7 @@ syn_issue = function(xx) {
         rp = NULL
     }
     if(!is.null(xx$wrongParent)) {
-        nwp = rgbif::cb_name_usage(xx$wrongParent)
+        nwp = cb_name_usage(xx$wrongParent)
         if(!nwp$usage$label == xx$wrongParent) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
