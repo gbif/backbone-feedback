@@ -28,6 +28,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           ls 
-          chmod +x scripts/shell/bb/bb.sh
+          chmod +x ./scripts/issue_check.sh
           ./scripts/issue_check.sh
           gh issue list --search "is:issue is:open project:gbif/23" --json number --jq '.[].number' --limit 500
