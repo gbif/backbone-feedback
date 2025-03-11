@@ -30,11 +30,12 @@ jobs:
       - name: Check if httr is installed
         run: |
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
-      # - name: Run feedback script
-        # env:
-          # GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        # run: |
-          # ls 
-          # chmod +x ./scripts/issue_check.sh
-          # ./scripts/issue_check.sh
+      
+      - name: Run feedback script
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ls 
+          chmod +x ./scripts/issue_check.sh
+          ./scripts/issue_check.sh
           

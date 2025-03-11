@@ -1,6 +1,7 @@
 library(dplyr)
 library(purrr)
 
+if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }
 source("scripts/check_functions_cb.R")
 
 args <- commandArgs(trailingOnly = TRUE)
