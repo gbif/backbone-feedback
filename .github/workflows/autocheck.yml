@@ -25,12 +25,13 @@ jobs:
           Rscript -e 'install.packages("httr")'
           Rscript -e 'install.packages("dplyr", repos="https://cloud.r-project.org")'
           Rscript -e 'install.packages("purrr", repos="https://cloud.r-project.org")'
+          Rscript -e 'installed.packages()'
 
-      - name: Run feedback script
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          ls 
-          chmod +x ./scripts/issue_check.sh
-          ./scripts/issue_check.sh
+      # - name: Run feedback script
+        # env:
+          # GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        # run: |
+          # ls 
+          # chmod +x ./scripts/issue_check.sh
+          # ./scripts/issue_check.sh
           
