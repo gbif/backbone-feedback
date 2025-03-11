@@ -33,7 +33,7 @@ jobs:
         run: |
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
       
-      - name: Run feedback script
+      - name: Run issue check script
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
@@ -49,3 +49,10 @@ jobs:
             echo "report.tsv does not exist"
             exit 1  # Fail the job if the file is missing
           fi
+
+      - name: Run issue check script
+        run: |
+            ls 
+            chmod +x ./scripts/create_issue_label.sh
+            ./scripts/create_issue_label.sh
+  
