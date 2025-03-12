@@ -1,6 +1,6 @@
 cb_name_usage = function(
     q = NULL,
-    key = "308499"
+    key = "3LXRC"
 ) {
   # https://api.checklistbank.org/dataset/304862/match/nameusage?q=Telegonus%20favilla
   base_url = "https://api.checklistbank.org/dataset/"
@@ -22,3 +22,5 @@ cb_name_usage = function(
   
   return(out)
 }
+
+cb_name_usage("Calopteryx virgo")

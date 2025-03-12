@@ -2,7 +2,7 @@ source("scripts/cb_name_usage.R")
 
 get_syns <- function(col_id = NULL) {
 
-url = paste0("https://api.checklistbank.org/dataset/308499/taxon/", col_id, "/info")
+url = paste0("https://api.checklistbank.org/dataset/3LXRC/taxon/", col_id, "/info")
 
 s = httr::GET(url,
   httr::authenticate(Sys.getenv("GBIF_USER"), Sys.getenv("GBIF_PWD"))) |> 
