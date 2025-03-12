@@ -18,7 +18,7 @@ while IFS=$'\t' read -r issue status type; do
     # remove all previous labels 
     gh issue edit $issue --remove-label 'autocheck - issue open on xRelease'
     gh issue edit $issue --remove-label 'autocheck - issue closed on xRelease'
-    gh issue edit $issue --remove-label 'autocheck - status unknown on xRelease'
+    gh issue edit $issue --remove-label 'autocheck - status unclear on xRelease'
     
     if [ "$status" = "ISSUE_CLOSED" ]; then
         echo "closed issue"   
@@ -30,7 +30,7 @@ while IFS=$'\t' read -r issue status type; do
     fi
     if [ "$status" = "JSON-TAG-ERROR" ]; then
         echo "error issue"
-        gh issue edit $issue --add-label 'autocheck - status unknown on xRelease'
+        gh issue edit $issue --add-label 'autocheck - status unclear on xRelease'
     fi
 
 done < "$tsv_file"
