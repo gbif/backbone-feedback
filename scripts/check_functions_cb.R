@@ -111,8 +111,10 @@ if(is.null(rg)) {
 syn_issue = function(xx) {
     n = cb_name_usage(xx$name)
     
-    cat("col names: ",n$usage$label,"\n")
-    cat("col status: ",n$usage$status,"\n")
+    if(nrow(n$usage) > 0) {
+    cat("XR name : ",n$usage$label[1],"\n")
+    cat("XR status: ",n$usage$status[1],"\n")
+    }
 
     if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
     if(is.null(xx$rightStatus) & is.null(xx$wrongStatus)) {
@@ -120,22 +122,27 @@ syn_issue = function(xx) {
         return("JSON-TAG-ERROR")    
     }
     
+    # check right parent 
     if(!is.null(xx$rightParent)) {
         nrp = cb_name_usage(xx$rightParent)
         if(!nrp$usage$label[1] == xx$rightParent) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
+        cat("XR rightParent: ",nrp$usage$label[1],"\n")
         rp = ifelse(xx$name %in% get_syns(nrp$usage$id), TRUE, FALSE)
     } else {
         rp = NULL
     }
+
+    # check wrong parent 
     if(!is.null(xx$wrongParent)) {
         nwp = cb_name_usage(xx$wrongParent)
         if(!nwp$usage$label[1] == xx$wrongParent) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
         }
+        cat("XR wrongParent: ",nwp$usage$label[1],"\n")
         wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
     } else {
         wp = NULL
@@ -150,6 +157,7 @@ syn_issue = function(xx) {
     } else {
         rs = NULL
     }
+
     cat("wrong status: ",ws,"\n")
     cat("right status: ",rs,"\n")
     cat("wrong parent: ",wp,"\n")
@@ -191,15 +199,15 @@ syn_issue = function(xx) {
     return(out)
 }
 
-# xx = list(
-# name = "Solanum lithophilum F. Muell.",
-# wrongParent = "Solanum ellipticum R. Br.",
-# rightParent = NULL,
-# wrongStatus = "SYNONYM",
-# rightStatus = "ACCEPTED"
-# )
+xx = list(
+name = "Solanum lithophilum F. Muell.",
+wrongParent = "Solanum ellipticum R. Br.",
+rightParent = NULL,
+wrongStatus = "SYNONYM",
+rightStatus = "ACCEPTED"
+)
 
-# syn_issue(xx)
+syn_issue(xx)
 
 # xx = list(
 # name =  "Psora elenkinii Rass.",
