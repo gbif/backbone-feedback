@@ -122,7 +122,7 @@ syn_issue = function(xx) {
     
     if(!is.null(xx$rightParent)) {
         nrp = cb_name_usage(xx$rightParent)
-        if(!nrp$usage$label == xx$rightParent) {
+        if(!nrp$usage$label[1] == xx$rightParent) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
@@ -132,21 +132,21 @@ syn_issue = function(xx) {
     }
     if(!is.null(xx$wrongParent)) {
         nwp = cb_name_usage(xx$wrongParent)
-        if(!nwp$usage$label == xx$wrongParent) {
+        if(!nwp$usage$label[1] == xx$wrongParent) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
         }
-        wp = ifelse(xx$name %in% get_syns(nwp$usage$id), TRUE, FALSE)
+        wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
     } else {
         wp = NULL
     }
     if(!is.null(xx$wrongStatus)) {
-        ws = n$usage$status == tolower(xx$wrongStatus)
+        ws = n$usage$status[1] == tolower(xx$wrongStatus)
     } else {
         ws = NULL
     }
     if(!is.null(xx$rightStatus)) {
-        rs = n$usage$status == tolower(xx$rightStatus)
+        rs = n$usage$status[1] == tolower(xx$rightStatus)
     } else {
         rs = NULL
     }
@@ -191,6 +191,15 @@ syn_issue = function(xx) {
     return(out)
 }
 
+# xx = list(
+# name = "Solanum lithophilum F. Muell.",
+# wrongParent = "Solanum ellipticum R. Br.",
+# rightParent = NULL,
+# wrongStatus = "SYNONYM",
+# rightStatus = "ACCEPTED"
+# )
+
+# syn_issue(xx)
 
 # xx = list(
 # name =  "Psora elenkinii Rass.",
