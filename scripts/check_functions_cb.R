@@ -199,15 +199,15 @@ syn_issue = function(xx) {
     return(out)
 }
 
-xx = list(
-name = "Solanum lithophilum F. Muell.",
-wrongParent = "Solanum ellipticum R. Br.",
-rightParent = NULL,
-wrongStatus = "SYNONYM",
-rightStatus = "ACCEPTED"
-)
+# xx = list(
+# name = "Solanum lithophilum F. Muell.",
+# wrongParent = "Solanum ellipticum R. Br.",
+# rightParent = NULL,
+# wrongStatus = "SYNONYM",
+# rightStatus = "ACCEPTED"
+# )
 
-syn_issue(xx)
+# syn_issue(xx)
 
 # xx = list(
 # name =  "Psora elenkinii Rass.",

@@ -33,6 +33,13 @@ jobs:
         run: |
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
       
+      - name: Remove report.tsv if it exists
+        run: |
+          ls
+          if [ -f "report.tsv" ]; then
+            rm report.tsv
+          fi
+
       - name: Run issue check script
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
