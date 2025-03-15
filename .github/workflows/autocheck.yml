@@ -45,13 +45,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           ls 
-          chmod +x ./scripts/issue_check.sh
-          ./scripts/issue_check.sh
+          chmod +x ./issue_check.sh
+          ./issue_check.sh
 
       - name: Check if report.tsv exists
         run: |
           if [ -f "report.tsv" ]; then
             echo "report.tsv exists"
+            cat report.tsv
           else
             echo "report.tsv does not exist"
             exit 1  # Fail the job if the file is missing
@@ -62,6 +63,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             ls 
-            chmod +x ./scripts/create_github_label.sh
-            ./scripts/create_github_label.sh
+            chmod +x ./create_github_label.sh
+            ./create_github_label.sh
   
