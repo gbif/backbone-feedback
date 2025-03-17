@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master  # Runs when pushing to the main branch
-  schedule:
+    schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
 jobs:

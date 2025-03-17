@@ -86,12 +86,12 @@ name_change = function(xx) {
 
 }
 
-xx = list(
-currentName = "Phylloscopus sibillatrix (Bechstein, 1792)",
-proposedName = "Phylloscopus sibilatrix (Bechstein, 1793)"
-)
+# xx = list(
+# currentName = "Phylloscopus sibillatrix (Bechstein, 1792)",
+# proposedName = "Phylloscopus sibilatrix (Bechstein, 1793)"
+# )
 
-name_change(xx)
+# name_change(xx)
 
 wrong_group = function(xx) {
 n = cb_name_usage(xx$name)
