@@ -43,6 +43,8 @@ jobs:
       - name: Run issue check script
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GBIF_USER: ${{ secrets.GBIF_USER }}
+          GBIF_PASSWORD: ${{ secrets.GBIF_PASSWORD }}
         run: |
           ls 
           chmod +x ./issue_check.sh
