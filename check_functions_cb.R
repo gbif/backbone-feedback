@@ -1,22 +1,6 @@
 source("cb_name_usage.R")
 
-get_syns <- function(col_id = NULL) {
-
-url = paste0("https://api.checklistbank.org/dataset/3LXRC/taxon/", col_id, "/info")
-
-s = httr::GET(url,
-  httr::authenticate(Sys.getenv("GBIF_USER"), Sys.getenv("GBIF_PWD"))) |> 
-  httr::content(as = "text", encoding = "UTF-8") |>
-  jsonlite::fromJSON(flatten = TRUE) |>
-  purrr::pluck("synonyms")
-
-ss = c()
-if(!is.null(s$homotypic)) ss = c(ss,s$homotypic$label)
-if(!is.null(s$heterotypic)) ss = c(ss,s$heterotypic$label)
-
-return(ss)
-}
-
+# bad name 
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
@@ -27,8 +11,6 @@ bad_name = function(xx) {
     }
     return(out)
 }
-
-# xx = list(badName="Calopteryx virgo (Linnaeus, 1758)")
 
 missing_name = function(xx) {
     mn = cb_name_usage(xx$missingName)$usage
@@ -42,8 +24,6 @@ missing_name = function(xx) {
     return(out)
 }
 
-# xx = list(missingName="Calopteryx virgo (Linneus, 1758)")
-
 name_change = function(xx) {
     
     cn = cb_name_usage(xx$currentName)$usage
@@ -53,7 +33,7 @@ name_change = function(xx) {
     } else {
         cn_exists = cn$label[1] == xx$currentName
     }
-
+    cat("current name exists: ",cn_exists,"\n")
     pn = cb_name_usage(xx$proposedName)$usage
 
     if(nrow(pn) == 0) { 
@@ -61,7 +41,22 @@ name_change = function(xx) {
     } else {
         pn_exists = pn$label[1] == xx$proposedName
     }
-    
+    # check alternatives if proposed name does not exist
+    if(!pn_exists) {
+        a = cb_name_usage(xx$proposedName,verbose=TRUE)$alternatives
+        if(nrow(a) == 0) {
+            message("No alternatives found")
+            pn_exists = FALSE
+        } else {
+            if(xx$proposedName %in% a$label) { 
+                pn_exists = TRUE
+            } else {
+                pn_exists = FALSE
+            }
+        }
+    }
+
+    cat("proposed name exists: ",pn_exists,"\n")
     if(xx$proposedName == xx$currentName) {
         return("JSON-TAG-ERROR")
     }
@@ -86,31 +81,67 @@ name_change = function(xx) {
 
 }
 
-# xx = list(
-# currentName = "Phylloscopus sibillatrix (Bechstein, 1792)",
-# proposedName = "Phylloscopus sibilatrix (Bechstein, 1793)"
-# )
-
-# name_change(xx)
-
 wrong_group = function(xx) {
 n = cb_name_usage(xx$name)
 
-if(!n$usage$label == xx$name) {
-    message("Name not found in the backbone")
-    return("JSON-TAG-ERROR")
-}
-# usageKey = n$usageKey
+if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
 
-parents = n$classification$name 
-# authorship = n$classification$authorship
+if(!n$usage$label[1] == xx$name) {
+    # look for the name in the alternatives
+    message("Name not found looking in alternatives")
+    a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
+    
+    if(nrow(a) == 0) {
+        message("No alternatives found")
+        return("JSON-TAG-ERROR")
+    }     
+    if(!xx$name %in% a$label) {
+        message("Name not found in alternatives")
+        return("JSON-TAG-ERROR")
+    } else {
+        TAXON_ID = a$id[xx$name == a$label]
+        cc = cb_name_usage_search(TAXON_ID = TAXON_ID)$result 
+        parents = cc[cc$id==TAXON_ID,]$classification[[1]]$label
+    }
+} else {
+    parents = n$usage$classification$label
+}
+
+cat(paste(parents,collapse="\n"))
 
 wg = xx$wrongGroup
 rg = xx$rightGroup
 
-if(!is.null(rg)) {
+cat("wrong group: ",wg,"\n")
+cat("right group: ",rg,"\n")
+
+
+if(!is.null(wg)) {
 wg_check = wg %in% parents
-rg_check = rg %in% parents
+if(!wg_check) {
+    # try basename search 
+    message("trying basename search for wrongGroup")
+    wg = cb_name_parser(q=wg)$uninomial
+    wg_check = wg %in% parents
+}
+} else {
+    wg_check = NULL
+}
+
+if(!is.null(rg)) {
+    rg_check = rg %in% parents
+if(!rg_check) {
+    # try basename search
+    message("trying basename search for rightGroup")
+    rg = cb_name_parser(q=rg)$uninomial
+    rg_check = rg %in% parents
+}
+} else {
+    rg_check = NULL
+}
+
+
+if(!is.null(wg_check) & !is.null(rg_check)) {
 
 if(wg_check & !rg_check) {
     out = "ISSUE_OPEN"
@@ -119,42 +150,81 @@ if(wg_check & !rg_check) {
 } else {
     out = "JSON-TAG-ERROR"
 }
-return(out)
+
 } 
 
-if(is.null(rg)) {
-    if(wg %in% parents) {
-        out = "ISSUE_OPEN"
-    } else {
-        out = "ISSUE_CLOSED"
-    }
-    return(out)
-    }
+if(is.null(wg_check) & !is.null(rg_check))
+if(!rg_check) {
+    out = "ISSUE_OPEN"
+} else if (rg_check) {
+    out = "ISSUE_CLOSED"
+} else {
+    out = "JSON-TAG-ERROR"
 }
+
+if(is.null(rg_check) & !is.null(wg_check)) {
+if(wg_check) {
+    out = "ISSUE_OPEN"
+} else if (!wg_check) {
+    out = "ISSUE_CLOSED"
+} else {
+    out = "JSON-TAG-ERROR"
+}
+}
+
+return(out)
+}
+
+
 
 syn_issue = function(xx) {
     n = cb_name_usage(xx$name)
     
     if(nrow(n$usage) > 0) {
+
+    if(!n$usage$label[1] == xx$name) {
+       # look for the name in the alternatives 
+         message("Name not found looking in alternatives")
+        aa = cb_name_usage(xx$name,verbose=TRUE)$alternatives
+        if(nrow(aa) == 0) {
+            message("No alternatives found")
+            return("JSON-TAG-ERROR")
+        } else if (!xx$name %in% aa$label) {
+            message("Name not found in alternatives")
+            return("JSON-TAG-ERROR")
+        } else {
+            n = list(usage = 
+                    tibble(
+                     label = aa$label[xx$name == aa$label],
+                     status = aa$status[xx$name == aa$label]
+                    ))
+        }
+    }
+    }
+    
+    if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
     cat("XR name : ",n$usage$label[1],"\n")
     cat("XR status: ",n$usage$status[1],"\n")
-    }
 
-    if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
     if(is.null(xx$rightStatus) & is.null(xx$wrongStatus)) {
-        message("Need at least one of rightStatus or wrongStatus")
-        return("JSON-TAG-ERROR")    
+        message("Ignoring rightStatus and wrongStatus")
     }
     
     # check right parent 
     if(!is.null(xx$rightParent)) {
         nrp = cb_name_usage(xx$rightParent)
+        if(nrow(nrp$usage) == 0) {
+            message("rightParent not found in backbone")
+            return("JSON-TAG-ERROR")
+        }
         if(!nrp$usage$label[1] == xx$rightParent) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
         cat("XR rightParent: ",nrp$usage$label[1],"\n")
-        rp = ifelse(xx$name %in% get_syns(nrp$usage$id), TRUE, FALSE)
+        print(nrp$usage$id[1])
+        get_syns(nrp$usage$id[1])
+        rp = ifelse(xx$name %in% get_syns(nrp$usage$id[1]), TRUE, FALSE)
     } else {
         rp = NULL
     }
@@ -162,6 +232,11 @@ syn_issue = function(xx) {
     # check wrong parent 
     if(!is.null(xx$wrongParent)) {
         nwp = cb_name_usage(xx$wrongParent)
+        if(nrow(nwp$usage) == 0) {
+            message("wrongParent not found in backbone")
+            return("JSON-TAG-ERROR")
+        }
+
         if(!nwp$usage$label[1] == xx$wrongParent) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
@@ -188,6 +263,9 @@ syn_issue = function(xx) {
     cat("right parent: ",rp,"\n")
     
     # get right status 
+    if(is.null(rs) & is.null(ws)) {
+        rrs = NULL
+    }
     if(is.null(rs) & !is.null(wp)) {
         rrs = ifelse(!wp, TRUE, FALSE)
     }
@@ -210,6 +288,9 @@ syn_issue = function(xx) {
     if(!is.null(rp) & is.null(wp)) {
         rrp = ifelse(rp, TRUE, FALSE)
     }
+    if(!is.null(rp) & !is.null(wp)) {
+        rrp = ifelse(rp & !wp, TRUE, FALSE)
+    }
 
     cat("right right parent: ",rrp,"\n")
 
@@ -217,110 +298,11 @@ syn_issue = function(xx) {
     if(is.null(rrp)) {
         out = ifelse(rrs, "ISSUE_CLOSED", "ISSUE_OPEN")    
     }
-    if(!is.null(rrp)) {
+    if(!is.null(rrp) & !is.null(rrs)) {
       out = ifelse(rrs & rrp, "ISSUE_CLOSED", "ISSUE_OPEN")
     } 
+    if(!is.null(rrp) & is.null(rrs)) {
+        out = ifelse(rrp, "ISSUE_CLOSED", "ISSUE_OPEN")
+    }
     return(out)
 }
-
-# xx = list(
-# name = "Solanum lithophilum F. Muell.",
-# wrongParent = "Solanum ellipticum R. Br.",
-# rightParent = NULL,
-# wrongStatus = "SYNONYM",
-# rightStatus = "ACCEPTED"
-# )
-
-# syn_issue(xx)
-
-# xx = list(
-# name =  "Psora elenkinii Rass.",
-# wrongParent =  "Psora himalayana (Church. Bab.) Timdal",
-# rightParent =  NULL,
-# wrongStatus =  "SYNONYM",
-# rightStatus =  "ACCEPTED"
-# )
-
-# syn_issue(xx)
-
-# xx = list(
-# name = "Codophila varia (Fabricius, 1787)",
-# wrongParent = "Orthops kalmii (Linnaeus, 1758)",
-# wrongStatus = "SYNONYM",
-# rightStatus = NULL
-# )
-
-# xx = list(
-# name = "Rumex alpestris Jacq.",
-# wrongParent = NULL, 
-# rightParent = NULL,
-# wrongStatus = "ACCEPTED",
-# rightStatus = "SYNONYM"
-# )
-
-# xx = list(
-# name = "Bryonia laciniosa L.",
-# wrongParent = "Diplocyclos palmatus subsp. palmatus",
-# rightParent = NULL,
-# wrongStatus = "SYNONYM",
-# rightStatus = NULL
-# )
-
-# xx = list(
-# name = "Ptychopoda lutulentaria (Staudinger, 1892)",
-# wrongParent = NULL,
-# rightParent = "Idaea lutulentaria (Staudinger, 1892)",
-# wrongStatus = NULL,
-# rightStatus = "SYNONYM"
-# )
-
-# xx = list(
-# name = "Phyciodes cocyta Cramer, 1779",
-# wrongParent = NULL,
-# rightParent = NULL,
-# wrongStatus = "SYNONYM",
-# rightStatus = "ACCEPTED"
-# )
-
-# xx = list(
-# name = "Coenagrion splendens (Harris, 1780)",
-# wrongParent = NULL,
-# rightParent = NULL,
-# wrongStatus = NULL,
-# rightStatus = "SYNONYM"
-# )
-
-# xx = list(
-# name = "Solanum lithophilum F. Muell.",
-# wrongParent = "Solanum ellipticum R. Br.",
-# rightParent = NULL,
-# wrongStatus = "SYNONYM",
-# rightStatus = "ACCEPTED"
-# )
-
-# syn_issue(xx)
-
-# xx = list(
-# name="Calopteryx virgo (Linnaeus, 1758)",
-# wrongGroup = "",
-# rightGroup = "Calopteryx")
-
-# xx = list(
-# name = "Myzinum Latreille, 1803",
-# wrongGroup = "Tiphiidae",
-# rightGroup = "Thynnidae"
-# )
-
-# xx = list(
-# name = "Wallackia Foissner, 1976",
-# wrongGroup = "Stomiiformes",
-# rightGroup = NULL
-# )
-
-# xx = list(
-# name = "Magnificus Yan, 2000",
-# wrongGroup = "Rosaceae",
-# rightGroup = "Hepialidae"
-# )
-# 
-# wrong_group(xx)

@@ -45,18 +45,27 @@ if("wrongRank" %in% names) {
 }
 if("wrongStatus" %in% names) {
    issue_status = syn_issue(xx)
-   
    issue_type = "wrongStatus"
 }
-if(is.null(issue_status)) { issue_status = "UNKNOWN" }
+if(is.null(issue_status)) { issue_status = "JSON-TAG-ERROR" }
 return(list(issue_status=issue_status,issue_type=issue_type))
 }
 
 if(list_depth(xx) == 1) {
 ff = fun_picker(xx)
 } else if(list_depth(xx) > 1) {
-ff = list(issue_status = "JSON-TAG-ERROR", issue_type = "ARRAY")
-# ff = map(xx,~ fun_picker(.x))
+# when json array provided 
+# ff = list(issue_status = "JSON-TAG-ERROR", issue_type = "ARRAY")
+ff = map(xx,~ fun_picker(.x))
+statuses = unique(map_chr(ff,~ .x$issue_status))
+ff$issue_type = "ARRAY"
+
+if(length(ff$issue_status) > 1) {
+   ff$issue_status = "ISSUE_OPEN"
+} else {
+  ff$issue_status = statuses
+}
+
 if(length(unique(ff$issue_status)) > 1) { 
    ff$issue_status = "ISSUE_OPEN" 
 } else {
@@ -67,6 +76,9 @@ ff$issue_status = "ISSUE_OPEN"
 }
 
 df = data.frame(issue = issue, issue_status = ff$issue_status, issue_type = ff$issue_type)
+
+
+cat(ff$issue_status, "\n")
 
 write.table(df, file = "report.tsv", append = TRUE, row.names = FALSE, col.names = !file.exists("report.tsv"), sep = "\t")
 
