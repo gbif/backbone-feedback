@@ -17,6 +17,7 @@ cb_name_usage = function(
             jsonlite::fromJSON(flatten = TRUE) 
   
   alternatives <- tt |> purrr::pluck("alternatives") |> tibble::as_tibble()
+  print(alternatives$label)
   usage <- tt |> purrr::pluck("usage") |> tibble::as_tibble()
    
   out <- list(usage = usage, alternatives = alternatives)

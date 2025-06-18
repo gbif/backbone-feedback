@@ -90,7 +90,11 @@ if(!n$usage$label[1] == xx$name) {
     # look for the name in the alternatives
     message("Name not found looking in alternatives")
     a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
-    
+    print(a$label)
+    print(xx$name)
+    print("---------------here--------------")
+    print(xx$name %in% a$label)
+    print(nrow(a))
     if(nrow(a) == 0) {
         message("No alternatives found")
         return("JSON-TAG-ERROR")
