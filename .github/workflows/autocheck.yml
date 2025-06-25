@@ -41,6 +41,7 @@ jobs:
           fi
 
       - name: Run issue check script
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GBIF_USER: ${{ secrets.GBIF_USER }}
@@ -48,9 +49,7 @@ jobs:
         run: |
           ls 
           chmod +x ./issue_check.sh
-          ./issue_check.sh
-
-      - name: Check if report.tsv exists
+          ./issue_check.sh      - name: Check if report.tsv exists
         run: |
           if [ -f "report.tsv" ]; then
             echo "report.tsv exists"
@@ -66,5 +65,4 @@ jobs:
         run: |
             ls 
             chmod +x ./create_github_label.sh
-            ./create_github_label.sh
-  
+            ./create_github_label.sh || true
