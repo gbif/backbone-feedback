@@ -90,11 +90,6 @@ if(!n$usage$label[1] == xx$name) {
     # look for the name in the alternatives
     message("Name not found looking in alternatives")
     a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
-    print(a$label)
-    print(xx$name)
-    print("---------------here--------------")
-    print(xx$name %in% a$label)
-    print(nrow(a))
     if(nrow(a) == 0) {
         message("No alternatives found")
         return("JSON-TAG-ERROR")
@@ -226,7 +221,6 @@ syn_issue = function(xx) {
             return("JSON-TAG-ERROR")
         }
         cat("XR rightParent: ",nrp$usage$label[1],"\n")
-        print(nrp$usage$id[1])
         get_syns(nrp$usage$id[1])
         rp = ifelse(xx$name %in% get_syns(nrp$usage$id[1]), TRUE, FALSE)
     } else {
