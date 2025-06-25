@@ -49,7 +49,9 @@ jobs:
         run: |
           ls 
           chmod +x ./issue_check.sh
-          ./issue_check.sh      - name: Check if report.tsv exists
+          ./issue_check.sh
+
+      - name: Check if report.tsv exists
         run: |
           if [ -f "report.tsv" ]; then
             echo "report.tsv exists"
