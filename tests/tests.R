@@ -1,6 +1,6 @@
 library(testthat)
-source("check_functions_cb.R")
-source("cb_name_usage.R")
+source("../check_functions_cb.R")
+source("../cb_name_usage.R")
 
 # bad name 
 test_that("bad_name", {
