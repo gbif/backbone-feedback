@@ -36,11 +36,27 @@ jobs:
       - name: Run tests
         run: |
           echo "Running R tests..."
-          if ! Rscript tests/tests.R; then
-            echo "❌ Tests failed! Stopping workflow."
-            exit 1
-          fi
-          echo "✅ All tests passed!"
+          test_files=(
+            "tests/tests.R"
+            "tests/tests-name-change.R"
+            "tests/tests-syn-issue.R"
+            "tests/tests-wrong-group.R"
+          )
+          
+          for test_file in "${test_files[@]}"; do
+            if [ -f "$test_file" ]; then
+              echo "Running $test_file..."
+              if ! Rscript "$test_file"; then
+                echo "❌ Tests in $test_file failed! Stopping workflow."
+                exit 1
+              fi
+              echo "✅ Tests in $test_file passed!"
+            else
+              echo "⚠️ Test file $test_file not found, skipping..."
+            fi
+          done
+          echo "✅ All specified test files completed!"
+
           
       - name: Remove report.tsv if it exists
         run: |
