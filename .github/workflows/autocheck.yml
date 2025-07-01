@@ -33,6 +33,16 @@ jobs:
         run: |
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
       
+      - name: Run tests
+        run: |
+          cd tests
+          echo "Running R tests..."
+          if ! Rscript tests.R; then
+            echo "❌ Tests failed! Stopping workflow."
+            exit 1
+          fi
+          echo "✅ All tests passed!"
+          
       - name: Remove report.tsv if it exists
         run: |
           ls
