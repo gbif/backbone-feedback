@@ -27,7 +27,7 @@ jobs:
 
       - name: Install specific R packages
         run: |
-          Rscript -e "pak::pak(c('httr', 'dplyr', 'tibble','purrr', 'jsonlite'))"
+          Rscript -e "pak::pak(c('httr', 'dplyr', 'tibble','purrr', 'jsonlite','testthat'))"
       
       - name: Check if httr is installed
         run: |
