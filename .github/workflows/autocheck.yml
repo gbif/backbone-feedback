@@ -33,18 +33,13 @@ jobs:
         run: |
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
       
-      - name: Run tests
-        shell: Rscript {0}
+      - name: Run simple-tests
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GBIF_USER: ${{ secrets.GBIF_USER }}
+          GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
-          library(testthat)
-          source("check_functions_cb.R")
-          source("cb_name_usage.R")
-          test_that("bad_name", {
-          expect_equal(
-          bad_name(
-          list(badName = "Insecta")), 
-          "ISSUE_OPEN")
-          })
+          Rscript tests/simple-tests.R
 
       - name: Remove report.tsv if it exists
         run: |
