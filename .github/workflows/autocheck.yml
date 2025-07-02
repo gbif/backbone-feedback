@@ -34,29 +34,12 @@ jobs:
           Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
       
       - name: Run tests
+        shell: Rscript {0}
         run: |
-          echo "Running R tests..."
-          test_files=(
-            "tests/tests.R"
-            "tests/tests-name-change.R"
-            "tests/tests-syn-issue.R"
-            "tests/tests-wrong-group.R"
-          )
-          
-          for test_file in "${test_files[@]}"; do
-            if [ -f "$test_file" ]; then
-              echo "Running $test_file..."
-              if ! Rscript "$test_file"; then
-                echo "❌ Tests in $test_file failed! Stopping workflow."
-                exit 1
-              fi
-              echo "✅ Tests in $test_file passed!"
-            else
-              echo "⚠️ Test file $test_file not found, skipping..."
-            fi
-          done
-          echo "✅ All specified test files completed!"
-
+          library(testthat)
+          source("check_functions_cb.R")
+          source("cb_name_usage.R")
+          bad_name(list(badName = "Animalia"))
           
       - name: Remove report.tsv if it exists
         run: |
