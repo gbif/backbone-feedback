@@ -42,7 +42,7 @@ jobs:
           test_that("bad_name", {
           expect_equal(
           bad_name(
-          list(badName = "Animalia")), 
+          list(badName = "Insecta")), 
           "ISSUE_OPEN")
           })
 
