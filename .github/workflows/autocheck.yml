@@ -39,8 +39,13 @@ jobs:
           library(testthat)
           source("check_functions_cb.R")
           source("cb_name_usage.R")
-          bad_name(list(badName = "Animalia"))
-          
+          test_that("bad_name", {
+          expect_equal(
+          bad_name(
+          list(badName = "Animalia")), 
+          "ISSUE_OPEN")
+          })
+
       - name: Remove report.tsv if it exists
         run: |
           ls
