@@ -1,5 +1,55 @@
 source("cb_name_usage.R")
 
+wrong_rank = function(xx) {
+    n = cb_name_usage(xx$name)$usage 
+    if(nrow(n) == 0) return("JSON-TAG-ERROR")
+    if(!n$label[1] == xx$name) {
+        # look for the name in the alternatives
+        message("Name not found looking in alternatives")
+        a = cb_name_usage(xx$name,verbose=TRUE)$alternatives
+        if(nrow(a) == 0) {
+            message("No alternatives found")
+            return("JSON-TAG-ERROR")
+        } else if (!xx$name %in% a$label) {
+            message("Name not found in alternatives")
+            return("JSON-TAG-ERROR")
+        } else {
+            n = list(usage = 
+                    tibble::tibble(
+                     label = a$label[xx$name == a$label],
+                     rank = a$rank[xx$name == a$label]
+                    ))
+        }
+    }
+    r = unique(n[n$label == xx$name,]$rank)
+    if(length(r) > 1) return("JSON-TAG-ERROR")
+    if(!is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
+        if(r == xx$wrongRank) {
+            return("ISSUE_OPEN")
+        } else if (r == xx$rightRank) {
+            return("ISSUE_CLOSED")
+        } else {
+            return("JSON-TAG-ERROR")
+        }
+   }
+   if(!is.null(xx$wrongRank) & is.null(xx$rightRank)) {
+       if(r == xx$wrongRank) {
+           return("ISSUE_OPEN")
+       } else {
+           return("JSON-TAG-ERROR")
+       }
+   }
+   if(is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
+       if(r == xx$rightRank) {
+           return("ISSUE_CLOSED")
+       } else {
+           return("JSON-TAG-ERROR")
+       }
+   }
+}
+
+wrong_rank(xx)
+
 # bad name 
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
