@@ -48,8 +48,6 @@ wrong_rank = function(xx) {
    }
 }
 
-wrong_rank(xx)
-
 # bad name 
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
