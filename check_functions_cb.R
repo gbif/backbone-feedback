@@ -62,7 +62,7 @@ bad_name = function(xx) {
 
 missing_name = function(xx) {
     mn = cb_name_usage(xx$missingName)$usage
-
+    
     if(nrow(mn) == 0) return("ISSUE_OPEN")
     if(mn$label == xx$missingName) {
         out = "ISSUE_CLOSED"

@@ -1,6 +1,6 @@
 cb_name_usage = function(
     q = NULL,
-    key = "3LXRC",
+    key = "3LXR",
     verbose = FALSE
 ) {
   # https://api.checklistbank.org/dataset/3LXRC/match/nameusage?q=Telegonus%20favilla
@@ -15,7 +15,7 @@ cb_name_usage = function(
             query = list(q = q, verbose = verbose)) |>
             httr::content(as = "text", encoding = "UTF-8") |>
             jsonlite::fromJSON(flatten = TRUE) 
-  
+
   alternatives <- tt |> purrr::pluck("alternatives") |> tibble::as_tibble()
   usage <- tt |> purrr::pluck("usage") |> tibble::as_tibble()
    
