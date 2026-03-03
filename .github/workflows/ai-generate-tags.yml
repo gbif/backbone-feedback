@@ -30,6 +30,11 @@ jobs:
         with:
           r-version: '4.3'
       
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+      
       - name: Install R dependencies
         run: |
           Rscript -e "install.packages(c('dplyr', 'purrr', 'httr', 'jsonlite'), repos='https://cloud.r-project.org')"
