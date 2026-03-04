@@ -91,6 +91,48 @@ def col_api_match(query: str) -> Dict[str, Any]:
         return {"error": str(e), "query": query}
 
 
+def gbif_species_lookup(species_key: str) -> Dict[str, Any]:
+    """
+    Look up a species by GBIF species key from a GBIF URL.
+    
+    Args:
+        species_key: GBIF species key (e.g., '6128760' from https://www.gbif.org/species/6128760)
+        
+    Returns:
+        Dictionary containing species information including scientific name, authorship, rank, etc.
+    """
+    url = f"https://api.gbif.org/v1/species/{species_key}"
+    
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Extract relevant fields for the agent
+        result = {
+            "key": data.get("key"),
+            "scientificName": data.get("scientificName"),
+            "canonicalName": data.get("canonicalName"),
+            "authorship": data.get("authorship"),
+            "rank": data.get("rank"),
+            "status": data.get("taxonomicStatus"),
+            "kingdom": data.get("kingdom"),
+            "phylum": data.get("phylum"),
+            "class": data.get("class"),
+            "order": data.get("order"),
+            "family": data.get("family"),
+            "genus": data.get("genus"),
+            "species": data.get("species"),
+            "acceptedKey": data.get("acceptedKey"),
+            "accepted": data.get("accepted"),
+            "parentKey": data.get("parentKey"),
+            "parent": data.get("parent")
+        }
+        return result
+    except requests.RequestException as e:
+        return {"error": str(e), "species_key": species_key}
+
+
 # Define tools for OpenAI agent
 tools = [
     {
@@ -113,6 +155,26 @@ tools = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "gbif_species_lookup",
+            "description": """Look up species information from GBIF using a species key. 
+            Use this when the user provides a GBIF species URL like https://www.gbif.org/species/6128760.
+            Extract the numeric key from the URL (e.g., 6128760) and look it up to get the 
+            scientific name, authorship, rank, and classification.""",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "species_key": {
+                        "type": "string",
+                        "description": "The GBIF species key (numeric ID from GBIF URL, e.g., '6128760')"
+                    }
+                },
+                "required": ["species_key"]
+            }
+        }
     }
 ]
 
@@ -122,14 +184,19 @@ backbone feedback issues into structured JSON tags for automation.
 
 MANDATORY WORKFLOW - FOLLOW THESE STEPS IN ORDER:
 1. Read user feedback about taxonomic issues
-2. Identify the type of issue being reported
-3. Extract ALL taxonomic names mentioned (both current and proposed names)
-4. **MANDATORY**: Call col_api_match for EVERY name before proceeding
-5. Wait for ALL validation results before generating JSON
-6. Generate appropriate JSON tags using the schemas below
-7. Return ONLY valid JSON - no additional text or markdown formatting
+2. **IF user provides GBIF URLs** (e.g., https://www.gbif.org/species/6128760):
+   - Extract the species key (numeric ID) from the URL
+   - Call gbif_species_lookup with that key to get the actual species name
+   - Use the scientificName from the response in subsequent steps
+3. Identify the type of issue being reported
+4. Extract ALL taxonomic names mentioned (both current and proposed names)
+5. **MANDATORY**: Call col_api_match for EVERY name before proceeding
+6. Wait for ALL validation results before generating JSON
+7. Generate appropriate JSON tags using the schemas below
+8. Return ONLY valid JSON - no additional text or markdown formatting
 
 CRITICAL RULES - THESE ARE NOT OPTIONAL:
+- **GBIF URLs**: If user provides URLs like https://www.gbif.org/species/6128760, extract the key and call gbif_species_lookup FIRST
 - You MUST validate ALL taxonomic names with col_api_match BEFORE outputting any JSON
 - For nameChange tags (misspellings/corrections): validate BOTH currentName AND proposedName
 - **USE THE 'label' FIELD** from col_api_match results - this contains the full scientific name WITH authorship
@@ -139,7 +206,18 @@ CRITICAL RULES - THESE ARE NOT OPTIONAL:
 - NEVER create non-existent species names or group names without validation
 - ONLY use the 6 JSON tag types defined below - do not create new tag types
 - If a name doesn't exist in COL API, use the exact name provided by the user
-- Output ONLY the JSON object, nothing else
+
+MULTIPLE ISSUES HANDLING:
+- **IMPORTANT**: A single user message may describe MULTIPLE distinct taxonomic issues
+- When you identify multiple issues, output an ARRAY of JSON objects: [{"issue1": ...}, {"issue2": ...}]
+- For a single issue, output a single JSON object: {"issue": ...}
+- Common patterns indicating multiple issues:
+  * "X is a synonym of Y and has been demoted to subfamily Z" → TWO issues: synIssue for X, AND wrongRank for Z
+  * "Family X belongs to Order Y, and Genus Z is wrongly placed in Family X" → TWO issues: wrongGroup for X, wrongGroup for Z
+  * Mentions of both the original name AND a derived name (e.g., family + subfamily)
+- Look for derived names: Cicadoprosbolidae (family) → Cicadoprosbolinae (subfamily)
+- Each distinct taxonomic name with an issue needs its own JSON tag
+- Validate ALL mentioned names separately with col_api_match
 
 JSON TAG SCHEMAS:
 
@@ -217,6 +295,37 @@ Step 1: Call col_api_match("Telegonus favilla") - returns {"label": "Telegonus f
 Step 2: Call col_api_match("Urbanus favilla") - returns {"label": "Urbanus favilla (Hewitson, 1874)", ...}
 Step 3: Use NAME CHANGE with labels: {"currentName": "Telegonus favilla (Hewitson, 1874)", "proposedName": "Urbanus favilla (Hewitson, 1874)"}
 
+Issue: "Check https://www.gbif.org/species/6128760 - the author is wrong, should be Lin C.-C. not Linné"
+Step 1: Extract species key from URL: 6128760
+Step 2: Call gbif_species_lookup("6128760") - returns {"scientificName": "Formoscolex koshunensis Linné", ...}
+Step 3: Call col_api_match("Formoscolex koshunensis Linné") - validate current name
+Step 4: Call col_api_match("Formoscolex koshunensis Lin C.-C.") - validate proposed name
+Step 5: Use NAME CHANGE: {"currentName": "Formoscolex koshunensis Linné", "proposedName": "Formoscolex koshunensis Lin C.-C."}
+
+Issue: "Cicadoprosbolidae has been synonymized with Tettigarctidae Distant 1905 and demoted to subfamily Cicadoprosbolinae Evans 1956"
+ANALYSIS: This describes TWO separate issues:
+  1. Cicadoprosbolidae (family) should be marked as synonym
+  2. Cicadoprosbolinae (subfamily) exists and may need rank verification
+Step 1: Call col_api_match("Cicadoprosbolidae") - returns {"label": "†Cicadoprosbolidae", "status": "accepted", "rank": "family", ...}
+Step 2: Call col_api_match("Tettigarctidae") - returns {"label": "Tettigarctidae Distant, 1905", "status": "accepted", "rank": "family", ...}
+Step 3: Call col_api_match("Cicadoprosbolinae") - returns {"label": "†Cicadoprosbolinae Evans, 1956", "rank": "subfamily", ...}
+Step 4: Check if Cicadoprosbolinae might be at wrong rank in GBIF (user says "demoted to subfamily" - suggests checking rank)
+Step 5: Generate TWO JSON objects in an array:
+[
+  {
+    "name": "Cicadoprosbolidae",
+    "wrongStatus": "ACCEPTED",
+    "rightStatus": "SYNONYM",
+    "wrongParent": null,
+    "rightParent": "Tettigarctidae Distant, 1905"
+  },
+  {
+    "name": "†Cicadoprosbolinae Evans, 1956",
+    "wrongRank": "FAMILY",
+    "rightRank": "SUBFAMILY"
+  }
+]
+
 VALIDATION WORKFLOW:
 1. Parse user's plain English issue
 2. Identify which JSON tag type applies
@@ -279,6 +388,17 @@ def generate_json_tags(user_issue: str, verbose: bool = False) -> str:
                 # Execute the tool
                 if function_name == "col_api_match":
                     result = col_api_match(function_args["query"])
+                    if verbose:
+                        print(f"Result: {json.dumps(result, indent=2)}")
+                    
+                    # Add tool result to messages
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(result)
+                    })
+                elif function_name == "gbif_species_lookup":
+                    result = gbif_species_lookup(function_args["species_key"])
                     if verbose:
                         print(f"Result: {json.dumps(result, indent=2)}")
                     
