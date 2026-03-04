@@ -110,8 +110,10 @@ jobs:
             }
       
       - name: Generate JSON tags with AI agent
-        if: steps.issue.outputs.has_label == 'false' && steps.issue.outputs.in_project == 'false'
         id: generate
+        # For manual runs: always proceed
+        # For automatic runs (future): skip if already checked or in project
+        if: github.event_name == 'workflow_dispatch' || (steps.issue.outputs.has_label == 'false' && steps.issue.outputs.in_project == 'false')
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GBIF_USER: ${{ secrets.GBIF_USER }}
@@ -206,7 +208,7 @@ jobs:
             });
       
       - name: Add ai-checked label
-        if: steps.issue.outputs.has_label == 'false' && steps.issue.outputs.in_project == 'false'
+        if: steps.issue.outputs.has_label == 'false'
         uses: actions/github-script@v7
         with:
           script: |
