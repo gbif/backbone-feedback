@@ -226,11 +226,15 @@ jobs:
             
             const body = `## 🤖 Proposed JSON Tags
 
-            ` + '```json\n' + jsonTags + '\n```' + `
+            // json for auto-checking
+            ${jsonTags}
+            [why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)
 
-            ` + (statusText ? `### ${statusEmoji} COL Status\n\n${statusText}\n\n` : '') + `Please review and copy the JSON into your issue if correct.
+            ` + (statusText ? `### ${statusEmoji} COL Status\n\n${statusText}\n\n` : '') + `
+            ### 📋 Review Actions
 
-            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed in the GBIF Backbone Taxonomy. All proposed changes must be reviewed and approved by editors before being applied. This tool exists solely to assist future editors in understanding and processing taxonomic feedback.
+            - [ ] **Accept AI suggestion** 
+            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied. 
 
             ---
             *Auto-generated using [backbone-feedback-agent](tree/master/agent)*`;
