@@ -175,10 +175,11 @@ jobs:
           JSON_CONTENT=$(cat /tmp/temp_json.txt)
           
           # Run the R script to check COL status with full error output
+          # Pass the file path to R script instead of raw JSON content to avoid escaping issues
           # Temporarily disable exit-on-error to capture R script failures
           set +e
           echo "Running COL status check..."
-          R_OUTPUT=$(Rscript process_json.R "$JSON_CONTENT" "${{ steps.issue.outputs.number }}" 2>&1)
+          R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${{ steps.issue.outputs.number }}" 2>&1)
           R_EXIT_CODE=$?
           set -e
           

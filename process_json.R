@@ -9,11 +9,17 @@ args <- commandArgs(trailingOnly = TRUE)
 original_string <- args[1]
 issue = args[2]
 
+# Check if original_string is a file path and read it if so
+if (file.exists(original_string)) {
+  message("Reading JSON from file: ", original_string)
+  original_string <- readLines(original_string, warn = FALSE) %>% 
+    paste(collapse = "\n")
+}
+
 link <- "\\[why is this here\\?\\]\\(https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental\\)"
 
 xx = gsub(link, "", original_string) %>%
 gsub("// json for auto-checking", "", .) %>%
-jsonlite::fromJSON(simplifyVector = FALSE) %>%
 jsonlite::fromJSON(simplifyVector = FALSE)
 
 list_depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, list_depth)), 0L)
