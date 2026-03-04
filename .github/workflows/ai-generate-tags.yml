@@ -156,6 +156,7 @@ jobs:
       - name: Check COL issue status
         if: steps.generate.outputs.success == 'true'
         id: col_check
+        continue-on-error: true
         env:
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
@@ -174,9 +175,12 @@ jobs:
           JSON_CONTENT=$(cat /tmp/temp_json.txt)
           
           # Run the R script to check COL status with full error output
+          # Temporarily disable exit-on-error to capture R script failures
+          set +e
           echo "Running COL status check..."
           R_OUTPUT=$(Rscript process_json.R "$JSON_CONTENT" "${{ steps.issue.outputs.number }}" 2>&1)
           R_EXIT_CODE=$?
+          set -e
           
           echo "R script output:"
           echo "$R_OUTPUT"
