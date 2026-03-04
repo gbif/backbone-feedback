@@ -1,0 +1,9 @@
+Amphibia is currently placed under Plantae but it should be under Animalia
+
+The species Agrion splendens (Harris, 1780) is marked as ACCEPTED but it should be a SYNONYM of Calopteryx splendens (Harris, 1780)
+
+The name 'Dog dog Waller 2025' should not exist in the database
+
+The name Cryptophyta should be changed to Cryptista Cavalier-Smith, 1989
+
+The species Telegonus favilla is not in the database but it should be included
