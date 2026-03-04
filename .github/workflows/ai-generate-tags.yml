@@ -150,12 +150,13 @@ jobs:
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANUAL_ISSUE_NUMBER: ${{ inputs.issue_number || '' }}
         run: |
           # Determine which issues to process
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Manual run: process single issue
-            ISSUES='[${{ inputs.issue_number }}]'
-            echo "Manual run: processing issue #${{ inputs.issue_number }}"
+            ISSUES="[${MANUAL_ISSUE_NUMBER}]"
+            echo "Manual run: processing issue #${MANUAL_ISSUE_NUMBER}"
           else
             # Automatic run: process all eligible issues
             ISSUES='${{ steps.get_issues.outputs.issues }}'
