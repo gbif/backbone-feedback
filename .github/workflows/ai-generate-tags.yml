@@ -163,11 +163,33 @@ jobs:
           # Create a temporary file with the JSON
           echo '${{ steps.generate.outputs.json_tags }}' > /tmp/temp_json.txt
           
-          # Run the R script to check COL status
-          COL_STATUS=$(Rscript process_json.R "/tmp/temp_json.txt" "${{ steps.issue.outputs.number }}" 2>&1 | tail -n 1 | tr -d '\n')
+          # Check if credentials are available
+          if [ -z "$GBIF_USER" ] || [ -z "$GBIF_PWD" ]; then
+            echo "Warning: GBIF credentials not set, skipping COL status check"
+            echo "col_status=CREDENTIALS_MISSING" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           
-          echo "COL status: $COL_STATUS"
-          echo "col_status=$COL_STATUS" >> $GITHUB_OUTPUT
+          # Read JSON content
+          JSON_CONTENT=$(cat /tmp/temp_json.txt)
+          
+          # Run the R script to check COL status with full error output
+          echo "Running COL status check..."
+          R_OUTPUT=$(Rscript process_json.R "$JSON_CONTENT" "${{ steps.issue.outputs.number }}" 2>&1)
+          R_EXIT_CODE=$?
+          
+          echo "R script output:"
+          echo "$R_OUTPUT"
+          
+          if [ $R_EXIT_CODE -ne 0 ]; then
+            echo "R script failed with exit code $R_EXIT_CODE"
+            echo "col_status=CHECK_FAILED" >> $GITHUB_OUTPUT
+          else
+            # Get last line as status
+            COL_STATUS=$(echo "$R_OUTPUT" | tail -n 1 | tr -d '\n')
+            echo "COL status: $COL_STATUS"
+            echo "col_status=$COL_STATUS" >> $GITHUB_OUTPUT
+          fi
       
       - name: Post comment with JSON tags
         if: steps.generate.outputs.success == 'true'
@@ -186,6 +208,12 @@ jobs:
             } else if (colStatus === 'ISSUE_CLOSED') {
               statusEmoji = '✅';
               statusText = 'Closed in COL - Issue appears to be fixed in Catalogue of Life';
+            } else if (colStatus === 'CREDENTIALS_MISSING') {
+              statusEmoji = '⚠️';
+              statusText = 'COL check skipped - GBIF credentials not configured';
+            } else if (colStatus === 'CHECK_FAILED') {
+              statusEmoji = '⚠️';
+              statusText = 'COL status check failed - see workflow logs for details';
             } else if (colStatus && colStatus !== '') {
               statusEmoji = '⚠️';
               statusText = `Status: ${colStatus}`;
@@ -196,6 +224,8 @@ jobs:
             ` + '```json\n' + jsonTags + '\n```' + `
 
             ` + (statusText ? `### ${statusEmoji} COL Status\n\n${statusText}\n\n` : '') + `Please review and copy the JSON into your issue if correct.
+
+            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed in the GBIF Backbone Taxonomy. All proposed changes must be reviewed and approved by editors before being applied. This tool exists solely to assist future editors in understanding and processing taxonomic feedback.
 
             ---
             *Auto-generated using [backbone-feedback-agent](tree/master/agent)*`;
