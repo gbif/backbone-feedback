@@ -44,8 +44,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const tenMonthsAgo = new Date();
-            tenMonthsAgo.setMonth(tenMonthsAgo.getMonth() - 10);
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
             
             // Get all open issues
             const issues = await github.paginate(github.rest.issues.listForRepo, {
@@ -57,7 +57,7 @@ jobs:
             
             console.log(`Found ${issues.length} open issues`);
             
-            // Filter: exclude ai-checked label, created within last month
+            // Filter: exclude ai-checked label, created within last week
             const eligibleIssues = [];
             
             for (const issue of issues) {
@@ -67,64 +67,10 @@ jobs:
                 continue;
               }
               
-              // Skip if older than 10 months
+              // Skip if older than 1 week
               const createdAt = new Date(issue.created_at);
-              if (createdAt < tenMonthsAgo) {
-                console.log(`Issue #${issue.number}: Skipping (older than 10 months)`);
-                continue;
-              }
-              
-              // Check if in project:gbif/23
-              try {
-                const query = `
-                  query($owner: String!, $repo: String!, $issueNumber: Int!) {
-                    repository(owner: $owner, name: $repo) {
-                      issue(number: $issueNumber) {
-                        projectItems(first: 20) {
-                          nodes {
-                            project {
-                              number
-                              owner {
-                                ... on Organization {
-                                  login
-                                }
-                                ... on User {
-                                  login
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                `;
-                
-                const result = await github.graphql(query, {
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issueNumber: issue.number
-                });
-                
-                const projectItems = result.repository.issue.projectItems.nodes;
-                
-                // Debug: log project memberships
-                if (projectItems.length > 0) {
-                  const projects = projectItems.map(item => `${item.project.owner.login}/${item.project.number}`).join(', ');
-                  console.log(`Issue #${issue.number}: In projects: ${projects}`);
-                }
-                
-                const inProject23 = projectItems.some(item => 
-                  item.project && item.project.owner && 
-                  item.project.owner.login === 'gbif' && item.project.number === 23
-                );
-                
-                if (inProject23) {
-                  console.log(`Issue #${issue.number}: Skipping (already in project:gbif/23)`);
-                  continue;
-                }
-              } catch (error) {
-                console.log(`Issue #${issue.number}: Could not check project status, skipping for safety: ${error.message}`);
+              if (createdAt < oneWeekAgo) {
+                console.log(`Issue #${issue.number}: Skipping (older than 1 week)`);
                 continue;
               }
               
@@ -172,32 +118,21 @@ jobs:
         run: |
           # Determine which issues to process
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${MANUAL_MODE}" = "single" ]; then
-            # Manual run: process single issue (but check project first)
+            # Manual run: process single issue (check if not too old)
             echo "Manual single mode: checking if issue #${MANUAL_ISSUE_NUMBER} is eligible"
             
-            # Check if issue is in project:gbif/23
-            PROJECT_CHECK=$(gh api graphql -f query='
-              query($owner: String!, $repo: String!, $issueNumber: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  issue(number: $issueNumber) {
-                    projectItems(first: 10) {
-                      nodes {
-                        project {
-                          number
-                          owner {
-                            ... on Organization {
-                              login
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }' -F owner="${{ github.repository_owner }}" -F repo="${{ github.repository.name }}" -F issueNumber=${MANUAL_ISSUE_NUMBER} --jq '.data.repository.issue.projectItems.nodes[] | select(.project.owner.login == "gbif" and .project.number == 23)')
+            # Check if issue is older than 1 week
+            ISSUE_DATA=$(gh api repos/${{ github.repository }}/issues/${MANUAL_ISSUE_NUMBER})
+            CREATED_AT=$(echo "$ISSUE_DATA" | jq -r '.created_at')
             
-            if [ -n "$PROJECT_CHECK" ]; then
-              echo "Issue #${MANUAL_ISSUE_NUMBER} is already in project:gbif/23. Skipping."
+            # Calculate age in seconds
+            CREATED_TIMESTAMP=$(date -d "$CREATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +%s 2>/dev/null)
+            CURRENT_TIMESTAMP=$(date +%s)
+            AGE_SECONDS=$((CURRENT_TIMESTAMP - CREATED_TIMESTAMP))
+            ONE_WEEK_SECONDS=$((7 * 24 * 60 * 60))
+            
+            if [ "$AGE_SECONDS" -gt "$ONE_WEEK_SECONDS" ]; then
+              echo "Issue #${MANUAL_ISSUE_NUMBER} is older than 1 week. Skipping."
               exit 0
             fi
             
