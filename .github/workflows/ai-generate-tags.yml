@@ -9,9 +9,6 @@ on:
         type: number
   schedule:
     - cron: '0 0 * * *'  # Run daily at midnight UTC
-  push:
-    branches:
-      - master
 
 permissions:
   issues: write
