@@ -12,7 +12,7 @@ on:
           - all
         default: single
       issue_number:
-        description: 'Issue number to process (for single mode)'
+        description: 'Issue number to process (only for single mode)'
         required: false
         type: number
   schedule:
@@ -40,7 +40,7 @@ jobs:
       
       - name: Get eligible issues
         id: get_issues
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'all')
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.mode == 'all'
         uses: actions/github-script@v7
         with:
           script: |
@@ -57,7 +57,7 @@ jobs:
             
             console.log(`Found ${issues.length} open issues`);
             
-            // Filter: exclude ai-checked label, created within last 10 months
+            // Filter: exclude ai-checked label, created within last month
             const eligibleIssues = [];
             
             for (const issue of issues) {
@@ -80,12 +80,15 @@ jobs:
                   query($owner: String!, $repo: String!, $issueNumber: Int!) {
                     repository(owner: $owner, name: $repo) {
                       issue(number: $issueNumber) {
-                        projectItems(first: 10) {
+                        projectItems(first: 20) {
                           nodes {
                             project {
                               number
                               owner {
                                 ... on Organization {
+                                  login
+                                }
+                                ... on User {
                                   login
                                 }
                               }
@@ -104,7 +107,15 @@ jobs:
                 });
                 
                 const projectItems = result.repository.issue.projectItems.nodes;
+                
+                // Debug: log project memberships
+                if (projectItems.length > 0) {
+                  const projects = projectItems.map(item => `${item.project.owner.login}/${item.project.number}`).join(', ');
+                  console.log(`Issue #${issue.number}: In projects: ${projects}`);
+                }
+                
                 const inProject23 = projectItems.some(item => 
+                  item.project && item.project.owner && 
                   item.project.owner.login === 'gbif' && item.project.number === 23
                 );
                 
@@ -113,7 +124,8 @@ jobs:
                   continue;
                 }
               } catch (error) {
-                console.log(`Issue #${issue.number}: Could not check project status, including anyway`);
+                console.log(`Issue #${issue.number}: Could not check project status, skipping for safety: ${error.message}`);
+                continue;
               }
               
               console.log(`Issue #${issue.number}: Eligible for processing`);
@@ -159,21 +171,45 @@ jobs:
           MANUAL_MODE: ${{ github.event.inputs.mode }}
         run: |
           # Determine which issues to process
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$MANUAL_MODE" = "single" ]; then
-            # Manual run: process single issue
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${MANUAL_MODE}" = "single" ]; then
+            # Manual run: process single issue (but check project first)
+            echo "Manual single mode: checking if issue #${MANUAL_ISSUE_NUMBER} is eligible"
+            
+            # Check if issue is in project:gbif/23
+            PROJECT_CHECK=$(gh api graphql -f query='
+              query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $issueNumber) {
+                    projectItems(first: 10) {
+                      nodes {
+                        project {
+                          number
+                          owner {
+                            ... on Organization {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' -F owner="${{ github.repository_owner }}" -F repo="${{ github.repository.name }}" -F issueNumber=${MANUAL_ISSUE_NUMBER} --jq '.data.repository.issue.projectItems.nodes[] | select(.project.owner.login == "gbif" and .project.number == 23)')
+            
+            if [ -n "$PROJECT_CHECK" ]; then
+              echo "Issue #${MANUAL_ISSUE_NUMBER} is already in project:gbif/23. Skipping."
+              exit 0
+            fi
+            
             ISSUES="[${MANUAL_ISSUE_NUMBER}]"
-            echo "Manual run (single mode): processing issue #${MANUAL_ISSUE_NUMBER}"
+            echo "Processing issue #${MANUAL_ISSUE_NUMBER}"
           else
-            # Automatic run or manual 'all' mode: process all eligible issues
+            # Automatic run or 'all' mode: process all eligible issues
             ISSUES='${{ steps.get_issues.outputs.issues }}'
             ISSUE_COUNT='${{ steps.get_issues.outputs.count }}'
+            echo "Processing ${ISSUE_COUNT} eligible issues"
             
-            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              echo "Manual run (all mode): processing ${ISSUE_COUNT} eligible issues"
-            else
-              echo "Scheduled run: processing ${ISSUE_COUNT} eligible issues"
-            fi
-                        if [ "$ISSUE_COUNT" = "0" ]; then
+            if [ "$ISSUE_COUNT" = "0" ]; then
               echo "No eligible issues to process. Exiting."
               exit 0
             fi
