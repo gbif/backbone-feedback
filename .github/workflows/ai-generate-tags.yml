@@ -253,25 +253,27 @@ jobs:
                 ;;
             esac
             
-            # Build comment body
-            COMMENT_BODY="## 🤖 Proposed JSON Tags
-
-// json for auto-checking
-${RESULT}
-[why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)
-
-### ${STATUS_EMOJI} COL Status
-
-${STATUS_TEXT}
-
-### 📋 Review Actions
-
-- [ ] **Accept AI suggestion** (you can edit the JSON here directly or make a new comment)
-> **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied."
+            # Build comment body and save to file
+            {
+              echo "## 🤖 Proposed JSON Tags"
+              echo ""
+              echo "// json for auto-checking"
+              echo "${RESULT}"
+              echo "[why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)"
+              echo ""
+              echo "### ${STATUS_EMOJI} COL Status"
+              echo ""
+              echo "${STATUS_TEXT}"
+              echo ""
+              echo "### 📋 Review Actions"
+              echo ""
+              echo "- [ ] **Accept AI suggestion** (you can edit the JSON here directly or make a new comment)"
+              echo "> **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied."
+            } > /tmp/comment_body.txt
             
             # Post comment
             gh api repos/${{ github.repository }}/issues/${issue_number}/comments \
-              -f body="$COMMENT_BODY"
+              -F body=@/tmp/comment_body.txt
             
             # Add ai-checked label
             gh api repos/${{ github.repository }}/issues/${issue_number}/labels \
