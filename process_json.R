@@ -14,13 +14,36 @@ if (file.exists(original_string)) {
   message("Reading JSON from file: ", original_string)
   original_string <- readLines(original_string, warn = FALSE) %>% 
     paste(collapse = "\n")
+} else {
+  # If it's a JSON-escaped string from jq, parse it first
+  # Remove surrounding quotes if present
+  if (grepl('^".*"$', original_string)) {
+    original_string <- substr(original_string, 2, nchar(original_string) - 1)
+  }
+  # Unescape JSON string (convert \n to newlines, \" to quotes, etc.)
+  original_string <- gsub('\\\\n', '\n', original_string)
+  original_string <- gsub('\\\\t', '\t', original_string)
+  original_string <- gsub('\\\\"', '"', original_string)
+  original_string <- gsub('\\\\\\\\', '\\\\', original_string)
 }
 
 link <- "\\[why is this here\\?\\]\\(https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental\\)"
 
-xx = gsub(link, "", original_string) %>%
-gsub("// json for auto-checking", "", .) %>%
-jsonlite::fromJSON(simplifyVector = FALSE)
+# Extract just the JSON portion between "// json for auto-checking" and the wiki link
+json_pattern <- "// json for auto-checking\\s*\\n(.*?)\\[why is this here\\?\\]"
+json_match <- regmatches(original_string, regexec(json_pattern, original_string, perl = TRUE))[[1]]
+
+if(length(json_match) > 1) {
+  json_text <- json_match[2]  # Get the captured group
+} else {
+  # Fallback to old method if pattern doesn't match
+  json_text <- gsub(link, "", original_string) %>%
+    gsub("// json for auto-checking", "", .) %>%
+    gsub("## 🤖 Proposed JSON Tags", "", .) %>%
+    gsub("###.*", "", .)  # Remove everything after ### headers
+}
+
+xx = jsonlite::fromJSON(json_text, simplifyVector = FALSE)
 
 list_depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, list_depth)), 0L)
 
@@ -78,7 +101,7 @@ if(length(unique(ff$issue_status)) > 1) {
    ff$issue_status = unique(ff$issue_status)
 }
 } else if (list_depth(xx) == 0) {
-ff$issue_status = "ISSUE_OPEN"
+ff = list(issue_status = "ISSUE_OPEN", issue_type = "EMPTY")
 }
 
 df = data.frame(issue = issue, issue_status = ff$issue_status, issue_type = ff$issue_type)

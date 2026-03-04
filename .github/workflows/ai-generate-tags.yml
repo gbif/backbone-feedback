@@ -233,11 +233,8 @@ jobs:
             ` + (statusText ? `### ${statusEmoji} COL Status\n\n${statusText}\n\n` : '') + `
             ### 📋 Review Actions
 
-            - [ ] **Accept AI suggestion** 
-            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied. 
-
-            ---
-            *Auto-generated using [backbone-feedback-agent](tree/master/agent)*`;
+            - [ ] **Accept AI suggestion** (you can edit the JSON here directly or make a new comment)
+            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied.`;
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
