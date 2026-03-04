@@ -150,7 +150,7 @@ jobs:
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANUAL_ISSUE_NUMBER: ${{ inputs.issue_number || '' }}
+          MANUAL_ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
         run: |
           # Determine which issues to process
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
