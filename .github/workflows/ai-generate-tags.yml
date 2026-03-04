@@ -7,6 +7,11 @@ on:
         description: 'Issue number to process'
         required: true
         type: number
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  push:
+    branches:
+      - master
 
 permissions:
   issues: write
@@ -19,6 +24,100 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Setup GitHub CLI
+        run: |
+          gh --version
+          jq --version
+          
+          # Create ai-checked label if it doesn't exist
+          gh label create ai-checked --color 0E8A16 --description "Issue processed by AI agent for JSON tag generation" || true
+      
+      - name: Get eligible issues
+        id: get_issues
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            
+            // Get all open issues
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            console.log(`Found ${issues.length} open issues`);
+            
+            // Filter: exclude ai-checked label, created within last month
+            const eligibleIssues = [];
+            
+            for (const issue of issues) {
+              // Skip if has ai-checked label
+              if (issue.labels.some(label => label.name === 'ai-checked')) {
+                console.log(`Issue #${issue.number}: Skipping (has ai-checked label)`);
+                continue;
+              }
+              
+              // Skip if older than 1 month
+              const createdAt = new Date(issue.created_at);
+              if (createdAt < oneMonthAgo) {
+                console.log(`Issue #${issue.number}: Skipping (older than 1 month)`);
+                continue;
+              }
+              
+              // Check if in project:gbif/23
+              try {
+                const query = `
+                  query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                    repository(owner: $owner, name: $repo) {
+                      issue(number: $issueNumber) {
+                        projectItems(first: 10) {
+                          nodes {
+                            project {
+                              number
+                              owner {
+                                ... on Organization {
+                                  login
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+                
+                const result = await github.graphql(query, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issueNumber: issue.number
+                });
+                
+                const projectItems = result.repository.issue.projectItems.nodes;
+                const inProject23 = projectItems.some(item => 
+                  item.project.owner.login === 'gbif' && item.project.number === 23
+                );
+                
+                if (inProject23) {
+                  console.log(`Issue #${issue.number}: Skipping (already in project:gbif/23)`);
+                  continue;
+                }
+              } catch (error) {
+                console.log(`Issue #${issue.number}: Could not check project status, including anyway`);
+              }
+              
+              console.log(`Issue #${issue.number}: Eligible for processing`);
+              eligibleIssues.push(issue.number);
+            }
+            
+            console.log(`${eligibleIssues.length} eligible issues to process: ${eligibleIssues.join(', ')}`);
+            core.setOutput('issues', JSON.stringify(eligibleIssues));
+            core.setOutput('count', eligibleIssues.length);
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -45,226 +144,144 @@ jobs:
           cd agent
           pip install -r requirements.txt
       
-      - name: Get issue details
-        id: issue
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issue_number = ${{ inputs.issue_number }};
-            const { data: issue } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number
-            });
-            
-            core.setOutput('number', issue_number);
-            core.setOutput('title', issue.title);
-            core.setOutput('body', issue.body || '');
-            
-            // Check if already has ai-checked label
-            const hasLabel = issue.labels.some(label => label.name === 'ai-checked');
-            core.setOutput('has_label', hasLabel);
-            
-            // Check if issue is in project:gbif/23
-            const query = `
-              query($owner: String!, $repo: String!, $issueNumber: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  issue(number: $issueNumber) {
-                    projectItems(first: 10) {
-                      nodes {
-                        project {
-                          number
-                          owner {
-                            ... on Organization {
-                              login
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-            
-            try {
-              const result = await github.graphql(query, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issueNumber: issue_number
-              });
-              
-              const projectItems = result.repository.issue.projectItems.nodes;
-              const inProject23 = projectItems.some(item => 
-                item.project.owner.login === 'gbif' && item.project.number === 23
-              );
-              
-              core.setOutput('in_project', inProject23);
-              
-              if (inProject23) {
-                console.log('Issue is already in project:gbif/23, skipping processing');
-              }
-            } catch (error) {
-              console.log('Could not check project status, proceeding with processing');
-              core.setOutput('in_project', false);
-            }
-      
-      - name: Generate JSON tags with AI agent
-        id: generate
-        # For manual runs: always proceed
-        # For automatic runs (future): skip if already checked or in project
-        if: github.event_name == 'workflow_dispatch' || (steps.issue.outputs.has_label == 'false' && steps.issue.outputs.in_project == 'false')
+      - name: Process issues
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
-          ISSUE_TITLE: ${{ steps.issue.outputs.title }}
-          ISSUE_BODY: ${{ steps.issue.outputs.body }}
         run: |
-          cd agent
-          
-          # Combine title and body
-          FULL_TEXT="${ISSUE_TITLE}"$'\n\n'"${ISSUE_BODY}"
-          
-          # Generate tags
-          echo "Processing issue #${ISSUE_NUMBER}..."
-          RESULT=$(python cli.py "$FULL_TEXT" 2>&1)
-          EXIT_CODE=$?
-          
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "Failed to generate tags"
-            echo "success=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # Validate JSON
-          echo "$RESULT" | python -c "import sys, json; json.loads(sys.stdin.read())" 2>/dev/null
-          
-          if [ $? -eq 0 ]; then
-            echo "success=true" >> $GITHUB_OUTPUT
-            echo "json_tags<<EOF" >> $GITHUB_OUTPUT
-            echo "$RESULT" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+          # Determine which issues to process
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual run: process single issue
+            ISSUES='[${{ inputs.issue_number }}]'
+            echo "Manual run: processing issue #${{ inputs.issue_number }}"
           else
-            echo "success=false" >> $GITHUB_OUTPUT
-            echo "Agent returned invalid JSON"
-          fi
-      
-      - name: Check COL issue status
-        if: steps.generate.outputs.success == 'true'
-        id: col_check
-        continue-on-error: true
-        env:
-          GBIF_USER: ${{ secrets.GBIF_USER }}
-          GBIF_PWD: ${{ secrets.GBIF_PWD }}
-        run: |
-          # Create a temporary file with the JSON
-          echo '${{ steps.generate.outputs.json_tags }}' > /tmp/temp_json.txt
-          
-          # Check if credentials are available
-          if [ -z "$GBIF_USER" ] || [ -z "$GBIF_PWD" ]; then
-            echo "Warning: GBIF credentials not set, skipping COL status check"
-            echo "col_status=CREDENTIALS_MISSING" >> $GITHUB_OUTPUT
-            exit 0
+            # Automatic run: process all eligible issues
+            ISSUES='${{ steps.get_issues.outputs.issues }}'
+            ISSUE_COUNT='${{ steps.get_issues.outputs.count }}'
+            echo "Automatic run: processing ${ISSUE_COUNT} issues"
+            
+            if [ "$ISSUE_COUNT" = "0" ]; then
+              echo "No eligible issues to process. Exiting."
+              exit 0
+            fi
           fi
           
-          # Read JSON content
-          JSON_CONTENT=$(cat /tmp/temp_json.txt)
-          
-          # Run the R script to check COL status with full error output
-          # Pass the file path to R script instead of raw JSON content to avoid escaping issues
-          # Temporarily disable exit-on-error to capture R script failures
-          set +e
-          echo "Running COL status check..."
-          R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${{ steps.issue.outputs.number }}" 2>&1)
-          R_EXIT_CODE=$?
-          set -e
-          
-          echo "R script output:"
-          echo "$R_OUTPUT"
-          
-          if [ $R_EXIT_CODE -ne 0 ]; then
-            echo "R script failed with exit code $R_EXIT_CODE"
-            echo "col_status=CHECK_FAILED" >> $GITHUB_OUTPUT
-          else
-            # Get last line as status
-            COL_STATUS=$(echo "$R_OUTPUT" | tail -n 1 | tr -d '\n')
-            echo "COL status: $COL_STATUS"
-            echo "col_status=$COL_STATUS" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Post comment with JSON tags
-        if: steps.generate.outputs.success == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const jsonTags = `${{ steps.generate.outputs.json_tags }}`;
-            const colStatus = `${{ steps.col_check.outputs.col_status }}`;
+          # Parse issues array and process each one
+          echo "$ISSUES" | jq -r '.[]' | while read -r issue_number; do
+            echo "================================================"
+            echo "Processing issue #${issue_number}"
+            echo "================================================"
             
-            let statusEmoji = '';
-            let statusText = '';
+            # Get issue details
+            ISSUE_DATA=$(gh api repos/${{ github.repository }}/issues/${issue_number})
+            ISSUE_TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
+            ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
             
-            if (colStatus === 'ISSUE_OPEN') {
-              statusEmoji = '🔴';
-              statusText = 'Open in COL - Issue still exists in Catalogue of Life';
-            } else if (colStatus === 'ISSUE_CLOSED') {
-              statusEmoji = '✅';
-              statusText = 'Closed in COL - Issue appears to be fixed in Catalogue of Life';
-            } else if (colStatus === 'CREDENTIALS_MISSING') {
-              statusEmoji = '⚠️';
-              statusText = 'COL check skipped - GBIF credentials not configured';
-            } else if (colStatus === 'CHECK_FAILED') {
-              statusEmoji = '⚠️';
-              statusText = 'COL status check failed - see workflow logs for details';
-            } else if (colStatus && colStatus !== '') {
-              statusEmoji = '⚠️';
-              statusText = `Status: ${colStatus}`;
-            }
+            # Check if already has ai-checked label (safety check)
+            HAS_LABEL=$(echo "$ISSUE_DATA" | jq -r '.labels[] | select(.name == "ai-checked") | .name')
+            if [ -n "$HAS_LABEL" ]; then
+              echo "Issue #${issue_number} already has ai-checked label, skipping"
+              continue
+            fi
             
-            const body = `## 🤖 Proposed JSON Tags
+            # Combine title and body
+            FULL_TEXT="${ISSUE_TITLE}"$'\n\n'"${ISSUE_BODY}"
+            
+            # Generate tags
+            cd agent
+            RESULT=$(python cli.py "$FULL_TEXT" 2>&1)
+            EXIT_CODE=$?
+            cd ..
+            
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "Failed to generate tags for issue #${issue_number}"
+              continue
+            fi
+            
+            # Validate JSON
+            echo "$RESULT" | python -c "import sys, json; json.loads(sys.stdin.read())" 2>/dev/null
+            if [ $? -ne 0 ]; then
+              echo "Agent returned invalid JSON for issue #${issue_number}"
+              continue
+            fi
+            
+            echo "Generated JSON tags:"
+            echo "$RESULT"
+            
+            # Check COL status
+            echo "$RESULT" > /tmp/temp_json.txt
+            
+            COL_STATUS="UNKNOWN"
+            if [ -n "$GBIF_USER" ] && [ -n "$GBIF_PWD" ]; then
+              set +e
+              R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
+              R_EXIT_CODE=$?
+              set -e
+              
+              if [ $R_EXIT_CODE -eq 0 ]; then
+                COL_STATUS=$(echo "$R_OUTPUT" | tail -n 1 | tr -d '\n')
+                echo "COL status: $COL_STATUS"
+              else
+                COL_STATUS="CHECK_FAILED"
+                echo "COL check failed"
+              fi
+            else
+              COL_STATUS="CREDENTIALS_MISSING"
+            fi
+            
+            # Prepare status text
+            case "$COL_STATUS" in
+              "ISSUE_OPEN")
+                STATUS_EMOJI="🔴"
+                STATUS_TEXT="Open in COL - Issue still exists in Catalogue of Life"
+                ;;
+              "ISSUE_CLOSED")
+                STATUS_EMOJI="✅"
+                STATUS_TEXT="Closed in COL - Issue appears to be fixed in Catalogue of Life"
+                ;;
+              "CREDENTIALS_MISSING")
+                STATUS_EMOJI="⚠️"
+                STATUS_TEXT="COL check skipped - GBIF credentials not configured"
+                ;;
+              "CHECK_FAILED")
+                STATUS_EMOJI="⚠️"
+                STATUS_TEXT="COL status check failed - see workflow logs for details"
+                ;;
+              *)
+                STATUS_EMOJI="⚠️"
+                STATUS_TEXT="Status: ${COL_STATUS}"
+                ;;
+            esac
+            
+            # Build comment body
+            COMMENT_BODY="## 🤖 Proposed JSON Tags
 
-            // json for auto-checking
-            ${jsonTags}
-            [why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)
+// json for auto-checking
+${RESULT}
+[why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)
 
-            ` + (statusText ? `### ${statusEmoji} COL Status\n\n${statusText}\n\n` : '') + `
-            ### 📋 Review Actions
+### ${STATUS_EMOJI} COL Status
 
-            - [ ] **Accept AI suggestion** (you can edit the JSON here directly or make a new comment)
-            > **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied.`;
+${STATUS_TEXT}
+
+### 📋 Review Actions
+
+- [ ] **Accept AI suggestion** (you can edit the JSON here directly or make a new comment)
+> **⚠️ Disclaimer:** This AI interpretation is provided as a suggestion only and has no effect on what gets changed. All proposed changes must be reviewed and approved by editors before being applied."
             
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ steps.issue.outputs.number }},
-              body: body
-            });
-      
-      - name: Add ai-checked label
-        if: steps.issue.outputs.has_label == 'false'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Create label if it doesn't exist
-            try {
-              await github.rest.issues.createLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                name: 'ai-checked',
-                color: '0E8A16',
-                description: 'Issue processed by AI agent for JSON tag generation'
-              });
-            } catch (error) {
-              // Label already exists
-            }
+            # Post comment
+            gh api repos/${{ github.repository }}/issues/${issue_number}/comments \
+              -f body="$COMMENT_BODY"
             
-            // Add label to issue
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ steps.issue.outputs.number }},
-              labels: ['ai-checked']
-            });
+            # Add ai-checked label
+            gh api repos/${{ github.repository }}/issues/${issue_number}/labels \
+              -f labels[]='ai-checked'
+            
+            echo "Successfully processed issue #${issue_number}"
+          done
+          
+          echo "================================================"
+          echo "All issues processed"
+          echo "================================================"
