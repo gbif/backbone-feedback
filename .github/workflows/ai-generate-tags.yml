@@ -46,6 +46,7 @@ jobs:
           script: |
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            const isManualRun = context.eventName === 'workflow_dispatch';
             
             // Get all open issues
             const issues = await github.paginate(github.rest.issues.listForRepo, {
@@ -56,8 +57,9 @@ jobs:
             });
             
             console.log(`Found ${issues.length} open issues`);
+            console.log(`Run type: ${isManualRun ? 'Manual' : 'Scheduled'}`);
             
-            // Filter: exclude ai-checked label, created within last week
+            // Filter: exclude ai-checked label, optionally filter by age for scheduled runs
             const eligibleIssues = [];
             
             for (const issue of issues) {
@@ -67,11 +69,13 @@ jobs:
                 continue;
               }
               
-              // Skip if older than 1 week
-              const createdAt = new Date(issue.created_at);
-              if (createdAt < oneWeekAgo) {
-                console.log(`Issue #${issue.number}: Skipping (older than 1 week)`);
-                continue;
+              // Skip if older than 1 week (only for scheduled runs)
+              if (!isManualRun) {
+                const createdAt = new Date(issue.created_at);
+                if (createdAt < oneWeekAgo) {
+                  console.log(`Issue #${issue.number}: Skipping (older than 1 week)`);
+                  continue;
+                }
               }
               
               console.log(`Issue #${issue.number}: Eligible for processing`);
@@ -118,23 +122,8 @@ jobs:
         run: |
           # Determine which issues to process
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${MANUAL_MODE}" = "single" ]; then
-            # Manual run: process single issue (check if not too old)
-            echo "Manual single mode: checking if issue #${MANUAL_ISSUE_NUMBER} is eligible"
-            
-            # Check if issue is older than 1 week
-            ISSUE_DATA=$(gh api repos/${{ github.repository }}/issues/${MANUAL_ISSUE_NUMBER})
-            CREATED_AT=$(echo "$ISSUE_DATA" | jq -r '.created_at')
-            
-            # Calculate age in seconds
-            CREATED_TIMESTAMP=$(date -d "$CREATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +%s 2>/dev/null)
-            CURRENT_TIMESTAMP=$(date +%s)
-            AGE_SECONDS=$((CURRENT_TIMESTAMP - CREATED_TIMESTAMP))
-            ONE_WEEK_SECONDS=$((7 * 24 * 60 * 60))
-            
-            if [ "$AGE_SECONDS" -gt "$ONE_WEEK_SECONDS" ]; then
-              echo "Issue #${MANUAL_ISSUE_NUMBER} is older than 1 week. Skipping."
-              exit 0
-            fi
+            # Manual run: process single issue (no age restriction for manual runs)
+            echo "Manual single mode: processing issue #${MANUAL_ISSUE_NUMBER}"
             
             ISSUES="[${MANUAL_ISSUE_NUMBER}]"
             echo "Processing issue #${MANUAL_ISSUE_NUMBER}"
