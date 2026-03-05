@@ -12,9 +12,9 @@ on:
           - all
         default: single
       issue_number:
-        description: 'Issue number to process (only for single mode)'
+        description: 'Issue number(s) to process (single mode: comma-separated list like "803,805,807" or single number)'
         required: false
-        type: number
+        type: string
   schedule:
     - cron: '0 0 * * *'  # Run daily at midnight UTC
 
@@ -122,11 +122,13 @@ jobs:
         run: |
           # Determine which issues to process
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${MANUAL_MODE}" = "single" ]; then
-            # Manual run: process single issue (no age restriction for manual runs)
-            echo "Manual single mode: processing issue #${MANUAL_ISSUE_NUMBER}"
+            # Manual run: process specified issue(s) (no age restriction for manual runs)
+            echo "Manual single mode: processing issue(s): ${MANUAL_ISSUE_NUMBER}"
             
-            ISSUES="[${MANUAL_ISSUE_NUMBER}]"
-            echo "Processing issue #${MANUAL_ISSUE_NUMBER}"
+            # Convert comma-separated list to JSON array
+            # Remove spaces and convert "803,805,807" to [803,805,807]
+            ISSUES=$(echo "${MANUAL_ISSUE_NUMBER}" | sed 's/[[:space:]]//g' | sed 's/,/,/g' | awk '{print "[" $0 "]"}')
+            echo "Processing issues: ${ISSUES}"
           else
             # Automatic run or 'all' mode: process all eligible issues
             ISSUES='${{ steps.get_issues.outputs.issues }}'
