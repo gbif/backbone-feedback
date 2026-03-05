@@ -81,7 +81,7 @@ name_change = function(xx) {
     } else {
         cn_exists = cn$label[1] == xx$currentName
     }
-    cat("current name exists: ",cn_exists,"\n")
+    # cat("current name exists: ",cn_exists,"\n")
     pn = cb_name_usage(xx$proposedName)$usage
 
     if(nrow(pn) == 0) { 
@@ -104,7 +104,7 @@ name_change = function(xx) {
         }
     }
 
-    cat("proposed name exists: ",pn_exists,"\n")
+    # cat("proposed name exists: ",pn_exists,"\n")
     if(xx$proposedName == xx$currentName) {
         return("JSON-TAG-ERROR")
     }
@@ -115,7 +115,7 @@ name_change = function(xx) {
         return("JSON-TAG-ERROR")
     }
     if(cn_exists & pn_exists) {
-        cat("both names exist")
+        # cat("both names exist")
         ifelse(cn$label[1] %in% get_syns(pn$id[1]),
         return("ISSUE_CLOSED"),
         return("ISSUE_OPEN"))
@@ -154,13 +154,13 @@ if(!n$usage$label[1] == xx$name) {
     parents = n$usage$classification$label
 }
 
-cat(paste(parents,collapse="\n"))
+# cat(paste(parents,collapse="\n"))
 
 wg = xx$wrongGroup
 rg = xx$rightGroup
 
-cat("wrong group: ",wg,"\n")
-cat("right group: ",rg,"\n")
+# cat("wrong group: ",wg,"\n")
+# cat("right group: ",rg,"\n")
 
 
 if(!is.null(wg)) {
@@ -250,8 +250,8 @@ syn_issue = function(xx) {
     }
     
     if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
-    cat("XR name : ",n$usage$label[1],"\n")
-    cat("XR status: ",n$usage$status[1],"\n")
+    # cat("XR name : ",n$usage$label[1],"\n")
+    # cat("XR status: ",n$usage$status[1],"\n")
 
     if(is.null(xx$rightStatus) & is.null(xx$wrongStatus)) {
         message("Ignoring rightStatus and wrongStatus")
@@ -268,7 +268,7 @@ syn_issue = function(xx) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
-        cat("XR rightParent: ",nrp$usage$label[1],"\n")
+        # cat("XR rightParent: ",nrp$usage$label[1],"\n")
         get_syns(nrp$usage$id[1])
         rp = ifelse(xx$name %in% get_syns(nrp$usage$id[1]), TRUE, FALSE)
     } else {
@@ -287,7 +287,7 @@ syn_issue = function(xx) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
         }
-        cat("XR wrongParent: ",nwp$usage$label[1],"\n")
+        # cat("XR wrongParent: ",nwp$usage$label[1],"\n")
         wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
     } else {
         wp = NULL
@@ -303,10 +303,10 @@ syn_issue = function(xx) {
         rs = NULL
     }
 
-    cat("wrong status: ",ws,"\n")
-    cat("right status: ",rs,"\n")
-    cat("wrong parent: ",wp,"\n")
-    cat("right parent: ",rp,"\n")
+    # cat("wrong status: ",ws,"\n")
+    # cat("right status: ",rs,"\n")
+    # cat("wrong parent: ",wp,"\n")
+    # cat("right parent: ",rp,"\n")
     
     # get right status 
     if(is.null(rs) & is.null(ws)) {
@@ -322,7 +322,7 @@ syn_issue = function(xx) {
         rrs = ifelse(rs & !ws, TRUE, FALSE)
     }
     
-    if(!is.null(rrs)) cat("right right status: ",rrs,"\n")
+    # if(!is.null(rrs)) cat("right right status: ",rrs,"\n")
 
     if(is.null(rp) & is.null(wp)) {
         rrp = NULL
@@ -338,7 +338,7 @@ syn_issue = function(xx) {
         rrp = ifelse(rp & !wp, TRUE, FALSE)
     }
 
-    cat("right right parent: ",rrp,"\n")
+    # cat("right right parent: ",rrp,"\n")
 
     # issue open or closed logic 
     if(is.null(rrp)) {
