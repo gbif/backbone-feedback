@@ -31,7 +31,7 @@ while IFS=$'\t' read -r issue status type; do
     
     current_label="" 
     if [ -z "$current_label" ]; then
-    current_label=$(echo "$labels" | grep -qF "autocheck - status open on xRelease" && echo "autocheck - status open on xRelease" || echo "")
+    current_label=$(echo "$labels" | grep -qF "autocheck - issue open on xRelease" && echo "autocheck - issue open on xRelease" || echo "")
     fi 
     if [ -z "$current_label" ]; then
     current_label=$(echo "$labels" | grep -qF "autocheck - issue closed on xRelease" && echo "autocheck - issue closed on xRelease" || echo "")
