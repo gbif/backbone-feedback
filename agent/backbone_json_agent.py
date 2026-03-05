@@ -229,6 +229,20 @@ JSON TAG SCHEMAS:
 }
 Ranks: KINGDOM, PHYLUM, CLASS, ORDER, FAMILY, GENUS, SPECIES, SUBSPECIES, VARIETY, FORM
 
+IMPORTANT - RANK NAME ENDINGS:
+When evaluating rank changes, consider standard taxonomic name endings:
+- **FAMILY** (Zoology): Names typically end in -idae (e.g., Cercopidae, Formicidae)
+- **FAMILY** (Botany): Names typically end in -aceae (e.g., Rosaceae, Asteraceae)
+- **SUBFAMILY** (Zoology): Names typically end in -inae (e.g., Cicadoprosbolinae, Formicinae)
+- **SUBFAMILY** (Botany): Names typically end in -oideae (e.g., Rosoideae)
+- **TRIBE** (Zoology): Names typically end in -ini (e.g., Cercopini)
+- **TRIBE** (Botany): Names typically end in -eae (e.g., Roseae)
+- **SUPERFAMILY** (Zoology): Names typically end in -oidea (e.g., Cercopoidea)
+- **ORDER**: Variable endings depending on group (e.g., -formes, -ales, -ida)
+
+These endings can help you identify when a name's current rank doesn't match its suffix.
+For example: "Cicadoprosbolinae" with -inae ending suggests SUBFAMILY, not FAMILY.
+
 2. BAD NAME - When a name shouldn't exist (NO valid alternative exists):
 {
   "badName": "Incorrect Name"
