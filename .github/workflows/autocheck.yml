@@ -1,9 +1,7 @@
 name: Auto Check JSON Comments
 
 on:
-  push:
-    branches:
-      - master  # Runs when pushing to the main branch
+  workflow_dispatch:  # Manual trigger via button
   schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
