@@ -52,7 +52,7 @@ wrong_rank = function(xx) {
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
-    if(bn$label == xx$badName) {
+    if(bn$label[1] == xx$badName) {
         out = "ISSUE_OPEN"
     } else {
         out = "ISSUE_CLOSED"
@@ -64,7 +64,7 @@ missing_name = function(xx) {
     mn = cb_name_usage(xx$missingName)$usage
     
     if(nrow(mn) == 0) return("ISSUE_OPEN")
-    if(mn$label == xx$missingName) {
+    if(mn$label[1] == xx$missingName) {
         out = "ISSUE_CLOSED"
     } else {
         out = "ISSUE_OPEN"
