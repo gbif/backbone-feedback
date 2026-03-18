@@ -1,7 +1,12 @@
 name: Auto Check JSON Comments
 
 on:
-  workflow_dispatch:  # Manual trigger via button
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process (leave empty to process all open issues)'
+        required: false
+        type: string
   schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
@@ -57,7 +62,7 @@ jobs:
         run: |
           ls 
           chmod +x ./issue_check.sh
-          ./issue_check.sh
+          ./issue_check.sh ${{ inputs.issue_number }}
 
       - name: Check if report.tsv exists
         run: |
