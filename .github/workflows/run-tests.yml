@@ -1,0 +1,35 @@
+name: Run Tests
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      
+      - name: Install R packages
+        run: |
+          Rscript -e "install.packages('pak', repos = 'https://r-lib.github.io/p/pak/devel/')"
+          Rscript -e "pak::pak(c('httr', 'dplyr', 'tibble', 'purrr', 'jsonlite', 'testthat'))"
+      
+      - name: Verify package installation
+        run: |
+          Rscript -e "library(httr); library(dplyr); library(tibble); library(purrr); library(jsonlite); library(testthat)"
+      
+      - name: Run tests
+        env:
+          GBIF_USER: ${{ secrets.GBIF_USER }}
+          GBIF_PWD: ${{ secrets.GBIF_PWD }}
+        run: |
+          Rscript tests/tests.R

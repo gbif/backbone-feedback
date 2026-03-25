@@ -3,25 +3,25 @@ source("cb_name_usage.R")
 wrong_rank = function(xx) {
     n = cb_name_usage(xx$name)$usage 
     if(nrow(n) == 0) return("JSON-TAG-ERROR")
-    if(!n$label[1] == xx$name) {
+    if(!n$labelHtml[1] == xx$name) {
         # look for the name in the alternatives
         message("Name not found looking in alternatives")
         a = cb_name_usage(xx$name,verbose=TRUE)$alternatives
         if(nrow(a) == 0) {
             message("No alternatives found")
             return("JSON-TAG-ERROR")
-        } else if (!xx$name %in% a$label) {
+        } else if (!xx$name %in% a$labelHtml) {
             message("Name not found in alternatives")
             return("JSON-TAG-ERROR")
         } else {
             n = list(usage = 
                     tibble::tibble(
-                     label = a$label[xx$name == a$label],
-                     rank = a$rank[xx$name == a$label]
+                     labelHtml = a$labelHtml[xx$name == a$labelHtml],
+                     rank = a$rank[xx$name == a$labelHtml]
                     ))
         }
     }
-    r = unique(n[n$label == xx$name,]$rank)
+    r = unique(n[n$labelHtml == xx$name,]$rank)
     if(length(r) > 1) return("JSON-TAG-ERROR")
     if(!is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
         if(r == xx$wrongRank) {
@@ -52,7 +52,7 @@ wrong_rank = function(xx) {
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
-    if(bn$label[1] == xx$badName) {
+    if(bn$labelHtml[1] == xx$badName) {
         out = "ISSUE_OPEN"
     } else {
         out = "ISSUE_CLOSED"
@@ -64,7 +64,7 @@ missing_name = function(xx) {
     mn = cb_name_usage(xx$missingName)$usage
     
     if(nrow(mn) == 0) return("ISSUE_OPEN")
-    if(mn$label[1] == xx$missingName) {
+    if(mn$labelHtml[1] == xx$missingName) {
         out = "ISSUE_CLOSED"
     } else {
         out = "ISSUE_OPEN"
@@ -79,7 +79,7 @@ name_change = function(xx) {
     if(nrow(cn) == 0) { 
         cn_exists = FALSE
     } else {
-        cn_exists = cn$label[1] == xx$currentName
+        cn_exists = cn$labelHtml[1] == xx$currentName
     }
     # cat("current name exists: ",cn_exists,"\n")
     pn = cb_name_usage(xx$proposedName)$usage
@@ -87,7 +87,7 @@ name_change = function(xx) {
     if(nrow(pn) == 0) { 
         pn_exists = FALSE
     } else {
-        pn_exists = pn$label[1] == xx$proposedName
+        pn_exists = pn$labelHtml[1] == xx$proposedName
     }
     # check alternatives if proposed name does not exist
     if(!pn_exists) {
@@ -96,7 +96,7 @@ name_change = function(xx) {
             message("No alternatives found")
             pn_exists = FALSE
         } else {
-            if(xx$proposedName %in% a$label) { 
+            if(xx$proposedName %in% a$labelHtml) { 
                 pn_exists = TRUE
             } else {
                 pn_exists = FALSE
@@ -116,7 +116,7 @@ name_change = function(xx) {
     }
     if(cn_exists & pn_exists) {
         # cat("both names exist")
-        ifelse(cn$label[1] %in% get_syns(pn$id[1]),
+        ifelse(cn$labelHtml[1] %in% get_syns(pn$id[1]),
         return("ISSUE_CLOSED"),
         return("ISSUE_OPEN"))
     }
@@ -134,7 +134,7 @@ n = cb_name_usage(xx$name)
 
 if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
 
-if(!n$usage$label[1] == xx$name) {
+if(!n$usage$labelHtml[1] == xx$name) {
     # look for the name in the alternatives
     message("Name not found looking in alternatives")
     a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
@@ -142,16 +142,16 @@ if(!n$usage$label[1] == xx$name) {
         message("No alternatives found")
         return("JSON-TAG-ERROR")
     }     
-    if(!xx$name %in% a$label) {
+    if(!xx$name %in% a$labelHtml) {
         message("Name not found in alternatives")
         return("JSON-TAG-ERROR")
     } else {
-        TAXON_ID = a$id[xx$name == a$label]
+        TAXON_ID = a$id[xx$name == a$labelHtml]
         cc = cb_name_usage_search(TAXON_ID = TAXON_ID)$result 
-        parents = cc[cc$id==TAXON_ID,]$classification[[1]]$label
+        parents = cc[cc$id==TAXON_ID,]$classification[[1]]$labelHtml
     }
 } else {
-    parents = n$usage$classification$label
+    parents = n$usage$classification$labelHtml
 }
 
 # cat(paste(parents,collapse="\n"))
@@ -229,28 +229,28 @@ syn_issue = function(xx) {
     
     if(nrow(n$usage) > 0) {
 
-    if(!n$usage$label[1] == xx$name) {
+    if(!n$usage$labelHtml[1] == xx$name) {
        # look for the name in the alternatives 
          message("Name not found looking in alternatives")
         aa = cb_name_usage(xx$name,verbose=TRUE)$alternatives
         if(nrow(aa) == 0) {
             message("No alternatives found")
             return("JSON-TAG-ERROR")
-        } else if (!xx$name %in% aa$label) {
+        } else if (!xx$name %in% aa$labelHtml) {
             message("Name not found in alternatives")
             return("JSON-TAG-ERROR")
         } else {
             n = list(usage = 
                     tibble(
-                     label = aa$label[xx$name == aa$label],
-                     status = aa$status[xx$name == aa$label]
+                     labelHtml = aa$labelHtml[xx$name == aa$labelHtml],
+                     status = aa$status[xx$name == aa$labelHtml]
                     ))
         }
     }
     }
     
     if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
-    # cat("XR name : ",n$usage$label[1],"\n")
+    # cat("XR name : ",n$usage$labelHtml[1],"\n")
     # cat("XR status: ",n$usage$status[1],"\n")
 
     if(is.null(xx$rightStatus) & is.null(xx$wrongStatus)) {
@@ -264,11 +264,11 @@ syn_issue = function(xx) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
-        if(!nrp$usage$label[1] == xx$rightParent) {
+        if(!nrp$usage$labelHtml[1] == xx$rightParent) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
-        # cat("XR rightParent: ",nrp$usage$label[1],"\n")
+        # cat("XR rightParent: ",nrp$usage$labelHtml[1],"\n")
         get_syns(nrp$usage$id[1])
         rp = ifelse(xx$name %in% get_syns(nrp$usage$id[1]), TRUE, FALSE)
     } else {
@@ -283,11 +283,11 @@ syn_issue = function(xx) {
             return("JSON-TAG-ERROR")
         }
 
-        if(!nwp$usage$label[1] == xx$wrongParent) {
+        if(!nwp$usage$labelHtml[1] == xx$wrongParent) {
              message("wrongParent not found in backbone")
              return("JSON-TAG-ERROR")
         }
-        # cat("XR wrongParent: ",nwp$usage$label[1],"\n")
+        # cat("XR wrongParent: ",nwp$usage$labelHtml[1],"\n")
         wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
     } else {
         wp = NULL

@@ -4,7 +4,7 @@ source("cb_name_usage.R")
 
 aa = cb_name_usage("Thorasena Macquart, 1838",verbose=TRUE)$alternatives
 nrow(aa)
-aa$label 
+aa$labelHtmlHtml 
 # syn issue
 test_that("syn_issue", {
 

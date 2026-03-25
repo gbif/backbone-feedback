@@ -1,3 +1,10 @@
+# Helper function to strip HTML tags from labelHtml
+strip_html <- function(html_text) {
+  if(is.null(html_text) || length(html_text) == 0) return(html_text)
+  # Remove HTML tags
+  gsub("<[^>]+>", "", html_text)
+}
+
 cb_name_usage = function(
     q = NULL,
     key = "3LXR",
@@ -18,6 +25,20 @@ cb_name_usage = function(
 
   alternatives <- tt |> purrr::pluck("alternatives") |> tibble::as_tibble()
   usage <- tt |> purrr::pluck("usage") |> tibble::as_tibble()
+  
+  # Clean HTML tags from labelHtml fields
+  if("labelHtml" %in% names(usage)) {
+    usage$labelHtml <- strip_html(usage$labelHtml)
+  }
+  if("labelHtml" %in% names(alternatives)) {
+    alternatives$labelHtml <- strip_html(alternatives$labelHtml)
+  }
+  # Clean classification labelHtml if it exists
+  if("classification" %in% names(usage) && !is.null(usage$classification[[1]])) {
+    if("labelHtml" %in% names(usage$classification[[1]])) {
+      usage$classification[[1]]$labelHtml <- strip_html(usage$classification[[1]]$labelHtml)
+    }
+  }
    
   out <- list(usage = usage, alternatives = alternatives)
   
@@ -43,6 +64,15 @@ cb_name_usage_search <- function(
     jsonlite::fromJSON(flatten = TRUE)
 
     result <- tt |> purrr::pluck("result") |> tibble::as_tibble()
+    
+    # Clean classification labelHtml if it exists
+    if(nrow(result) > 0 && "classification" %in% names(result)) {
+      for(i in 1:nrow(result)) {
+        if(!is.null(result$classification[[i]]) && "labelHtml" %in% names(result$classification[[i]])) {
+          result$classification[[i]]$labelHtml <- strip_html(result$classification[[i]]$labelHtml)
+        }
+      }
+    }
     
   return(list(result = result))
 }
@@ -74,8 +104,8 @@ s = httr::GET(url,
   purrr::pluck("synonyms")
 
 ss = c()
-if(!is.null(s$homotypic)) ss = c(ss,s$homotypic$label)
-if(!is.null(s$heterotypic)) ss = c(ss,s$heterotypic$label)
+if(!is.null(s$homotypic)) ss = c(ss, strip_html(s$homotypic$labelHtml))
+if(!is.null(s$heterotypic)) ss = c(ss, strip_html(s$heterotypic$labelHtml))
 
 return(ss)
 }
@@ -113,4 +143,4 @@ get_dataset_source <- function(
 
 
 # cc = cb_name_usage_search(key=308637,TAXON_ID = "BXVZM")$result 
-# cc$classification[[1]] |> pull(label)
+# cc$classification[[1]] |> pull(labelHtml)

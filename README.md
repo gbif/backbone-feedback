@@ -1,5 +1,7 @@
 # Backbone Feedback
 
+[![Run Tests](https://github.com/gbif/backbone-feedback/actions/workflows/run-tests.yml/badge.svg)](https://github.com/gbif/backbone-feedback/actions/workflows/run-tests.yml)
+
 This repository contains the feedback reported to GBIF relating to the GBIF Backbone taxonomy.
 
 ## Backbone Feedback JSON Tag Agent
