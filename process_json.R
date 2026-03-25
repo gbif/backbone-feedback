@@ -43,6 +43,10 @@ if(length(json_match) > 1) {
     gsub("###.*", "", .)  # Remove everything after ### headers
 }
 
+# Clean up the JSON text: remove carriage returns and trim whitespace
+json_text <- gsub("\r", "", json_text)  # Remove Windows line endings
+json_text <- trimws(json_text)  # Trim leading/trailing whitespace
+
 xx = jsonlite::fromJSON(json_text, simplifyVector = FALSE)
 
 list_depth <- function(this) ifelse(is.list(this), 1L + max(sapply(this, list_depth)), 0L)
