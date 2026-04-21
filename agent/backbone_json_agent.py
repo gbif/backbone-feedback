@@ -284,7 +284,7 @@ Note: wrongGroup or rightGroup can be null if only one is known
   "wrongParent": "Incorrect Parent Name or null",
   "rightParent": "Correct Parent Name or null"
 }
-Note: Use ACCEPTED or SYNONYM for status fields
+Note: Use ACCEPTED or SYNONYM for wrongStatus and rightStatus fields
 
 EXAMPLES:
 
