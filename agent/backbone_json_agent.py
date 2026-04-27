@@ -163,7 +163,8 @@ tools = [
             "description": """Look up species information from GBIF using a species key. 
             Use this when the user provides a GBIF species URL like https://www.gbif.org/species/6128760.
             Extract the numeric key from the URL (e.g., 6128760) and look it up to get the 
-            scientific name, authorship, rank, and classification.""",
+            scientific name with authorship, rank, and classification. Always use the 'scientificName' 
+            field from the response as it includes the full name with authorship.""",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -187,7 +188,9 @@ MANDATORY WORKFLOW - FOLLOW THESE STEPS IN ORDER:
 2. **IF user provides GBIF URLs** (e.g., https://www.gbif.org/species/6128760):
    - Extract the species key (numeric ID) from the URL
    - Call gbif_species_lookup with that key to get the actual species name
-   - Use the scientificName from the response in subsequent steps
+   - **ALWAYS use the 'scientificName' field** from the response (includes authorship)
+   - NEVER use 'canonicalName' alone - it lacks authorship information
+   - Use this full scientificName (with authorship) in ALL subsequent steps
 3. Identify the type of issue being reported
 4. Extract ALL taxonomic names mentioned (both current and proposed names)
 5. **MANDATORY**: Call col_api_match for EVERY name before proceeding
@@ -197,6 +200,9 @@ MANDATORY WORKFLOW - FOLLOW THESE STEPS IN ORDER:
 
 CRITICAL RULES - THESE ARE NOT OPTIONAL:
 - **GBIF URLs**: If user provides URLs like https://www.gbif.org/species/6128760, extract the key and call gbif_species_lookup FIRST
+  * **ALWAYS use 'scientificName' field** from gbif_species_lookup (includes authorship)
+  * NEVER use 'canonicalName' alone - it lacks authorship
+  * Example: Use "Formoscolex koshunensis Linné" NOT "Formoscolex koshunensis"
 - You MUST validate ALL taxonomic names with col_api_match BEFORE outputting any JSON
 - For nameChange tags (misspellings/corrections): validate BOTH currentName AND proposedName
 - **USE THE 'label' FIELD** from col_api_match results - this contains the full scientific name WITH authorship
@@ -342,14 +348,16 @@ Step 5: Generate TWO JSON objects in an array:
 
 VALIDATION WORKFLOW:
 1. Parse user's plain English issue
-2. Identify which JSON tag type applies
-3. Extract ALL taxonomic names mentioned (including both sides of nameChange)
-4. Call col_api_match for EACH taxonomic name - DO NOT SKIP THIS STEP
-5. Wait for all validation results before proceeding
-6. **Extract the 'label' field from EACH col_api_match response** - this has the full name with authorship
-7. Use the full 'label' value (with authorship) in your JSON output when available
-8. If a name doesn't exist in COL, use the exact name from user input
-9. Output the final JSON with validated full names including authorship
+2. **IF GBIF URLs provided**: Extract species keys and call gbif_species_lookup FIRST
+   - Always use the 'scientificName' field (includes authorship) from GBIF results
+3. Identify which JSON tag type applies
+4. Extract ALL taxonomic names mentioned (including both sides of nameChange)
+5. Call col_api_match for EACH taxonomic name - DO NOT SKIP THIS STEP
+6. Wait for all validation results before proceeding
+7. **Extract the 'label' field from EACH col_api_match response** - this has the full name with authorship
+8. Use the full 'label' value (with authorship) in your JSON output when available
+9. If a name doesn't exist in COL, use the exact name from user input (or GBIF scientificName if from GBIF)
+10. Output the final JSON with validated full names including authorship
 
 Remember: Your output must be ONLY valid JSON, parseable by json.loads(). 
 No markdown code blocks, no explanatory text."""
