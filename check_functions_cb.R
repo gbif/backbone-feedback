@@ -78,19 +78,27 @@ name_change = function(xx) {
     
     if(nrow(cn) == 0) { 
         cn_exists = FALSE
+        cn_fuzzy_match = NULL
+        cn_no_results = TRUE  # Track when query returns nothing at all
     } else {
         cn_exists = cn$labelHtml[1] == xx$currentName
+        cn_fuzzy_match = cn$labelHtml[1]  # Store the fuzzy match result
+        cn_no_results = FALSE
     }
     # cat("current name exists: ",cn_exists,"\n")
     pn = cb_name_usage(xx$proposedName)$usage
 
     if(nrow(pn) == 0) { 
         pn_exists = FALSE
+        pn_fuzzy_match = NULL
+        pn_no_results = TRUE  # Track when query returns nothing at all
     } else {
         pn_exists = pn$labelHtml[1] == xx$proposedName
+        pn_fuzzy_match = pn$labelHtml[1]  # Store the fuzzy match result
+        pn_no_results = FALSE
     }
     # check alternatives if proposed name does not exist
-    if(!pn_exists) {
+    if(!pn_exists && !pn_no_results) {
         a = cb_name_usage(xx$proposedName,verbose=TRUE)$alternatives
         if(nrow(a) == 0) {
             message("No alternatives found")
@@ -111,20 +119,52 @@ name_change = function(xx) {
     if(is.null(xx$proposedName) | is.null(xx$currentName)) {
         return("JSON-TAG-ERROR")
     }
-    if(!cn_exists & !pn_exists) {
+    
+    # CASE 1: currentName returns 0 results (removed) AND proposedName exists → CLOSED
+    if(cn_no_results && pn_exists) {
+        return("ISSUE_CLOSED")
+    }
+    
+    # CASE 2: currentName returns 0 results AND proposedName also returns 0 → ERROR
+    if(cn_no_results && pn_no_results) {
         return("JSON-TAG-ERROR")
     }
+    
+    # CASE 3: Fuzzy match - currentName query returned the proposedName → CLOSED
+    if(!is.null(cn_fuzzy_match) && !is.null(xx$proposedName)) {
+        if(cn_fuzzy_match == xx$proposedName) {
+            return("ISSUE_CLOSED")
+        }
+    }
+    
+    # CASE 4: Fuzzy match - proposedName query returned the currentName → OPEN
+    if(!is.null(pn_fuzzy_match) && !is.null(xx$currentName)) {
+        if(pn_fuzzy_match == xx$currentName) {
+            return("ISSUE_OPEN")
+        }
+    }
+    
+    # CASE 5: Both names exist exactly as specified
     if(cn_exists & pn_exists) {
-        # cat("both names exist")
+        # Check if they're synonyms - if so, issue is closed
         ifelse(cn$labelHtml[1] %in% get_syns(pn$id[1]),
         return("ISSUE_CLOSED"),
         return("ISSUE_OPEN"))
     }
+    
+    # CASE 6: currentName doesn't exist (fuzzy match or no results) AND proposedName exists → CLOSED
     if(!cn_exists & pn_exists) {
         return("ISSUE_CLOSED")
     }
+    
+    # CASE 7: currentName exists AND proposedName doesn't exist → OPEN
     if(cn_exists & !pn_exists) {
         return("ISSUE_OPEN")
+    }
+    
+    # CASE 8: Neither exists exactly, no fuzzy matches found → ERROR
+    if(!cn_exists & !pn_exists) {
+        return("JSON-TAG-ERROR")
     }
 
 }
