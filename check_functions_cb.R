@@ -311,6 +311,24 @@ return(out)
 syn_issue = function(xx) {
     n = cb_name_usage(xx$name)
     
+    # FALLBACK: If name query returns 0 results, try parsing and searching just the base name
+    if(nrow(n$usage) == 0) {
+        parsed <- cb_name_parser(q = xx$name)
+        base_name <- parsed$scientificName
+        if(!is.null(base_name) && base_name != "") {
+            message("Trying base name for syn_issue: ", base_name)
+            n_base <- cb_name_usage(base_name)
+            if(nrow(n_base$usage) > 0) {
+                # Check if the returned match contains our name or vice versa
+                if(grepl(base_name, n_base$usage$labelHtml[1], fixed = TRUE) || 
+                   grepl(n_base$usage$labelHtml[1], xx$name, fixed = TRUE)) {
+                    n <- n_base  # Update the result
+                    message("Found name via base name: ", n_base$usage$labelHtml[1])
+                }
+            }
+        }
+    }
+    
     if(nrow(n$usage) > 0) {
 
     if(!n$usage$labelHtml[1] == xx$name) {
@@ -344,13 +362,32 @@ syn_issue = function(xx) {
     # check right parent 
     if(!is.null(xx$rightParent)) {
         nrp = cb_name_usage(xx$rightParent)
+        
+        # If rightParent not found with full authorship, try base name
+        if(nrow(nrp$usage) == 0 || !nrp$usage$labelHtml[1] == xx$rightParent) {
+            message("rightParent not found or not exact match, trying base name")
+            parsed_rp = cb_name_parser(xx$rightParent)
+            if(!is.null(parsed_rp$scientificName)) {
+                nrp_base = cb_name_usage(parsed_rp$scientificName)
+                if(nrow(nrp_base$usage) > 0) {
+                    message("rightParent base name found: ", nrp_base$usage$labelHtml[1])
+                    nrp = nrp_base
+                }
+            }
+        }
+        
         if(nrow(nrp$usage) == 0) {
             message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
         if(!nrp$usage$labelHtml[1] == xx$rightParent) {
-            message("rightParent not found in backbone")
-            return("JSON-TAG-ERROR")
+            # Allow base name match
+            parsed_check = cb_name_parser(xx$rightParent)
+            if(is.null(parsed_check$scientificName) || 
+               !grepl(parsed_check$scientificName, nrp$usage$labelHtml[1], fixed = TRUE)) {
+                message("rightParent not found in backbone")
+                return("JSON-TAG-ERROR")
+            }
         }
         # cat("XR rightParent: ",nrp$usage$labelHtml[1],"\n")
         get_syns(nrp$usage$id[1])
