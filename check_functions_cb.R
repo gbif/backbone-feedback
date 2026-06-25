@@ -111,6 +111,27 @@ name_change = function(xx) {
             }
         }
     }
+    
+    # FALLBACK: If proposedName has no results, try parsing and searching just the base name
+    # This handles cases where authorship causes match failures (e.g., commas, special chars)
+    if(pn_no_results) {
+        parsed <- cb_name_parser(q = xx$proposedName)
+        base_name <- parsed$scientificName
+        if(!is.null(base_name) && base_name != "") {
+            message("Trying base name: ", base_name)
+            pn_base <- cb_name_usage(base_name)$usage
+            if(nrow(pn_base) > 0) {
+                # Check if the returned match contains our proposed name or vice versa
+                if(grepl(base_name, pn_base$labelHtml[1], fixed = TRUE) || 
+                   grepl(pn_base$labelHtml[1], xx$proposedName, fixed = TRUE)) {
+                    pn_exists = TRUE
+                    pn_no_results = FALSE
+                    pn_fuzzy_match = pn_base$labelHtml[1]
+                    message("Found match via base name: ", pn_base$labelHtml[1])
+                }
+            }
+        }
+    }
 
     # cat("proposed name exists: ",pn_exists,"\n")
     if(xx$proposedName == xx$currentName) {
