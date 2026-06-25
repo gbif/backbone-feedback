@@ -112,22 +112,45 @@ name_change = function(xx) {
         }
     }
     
+    # FALLBACK: If currentName has no results, try parsing and searching just the base name
+    # This handles cases where authorship causes match failures (e.g., commas, special chars)
+    if(cn_no_results) {
+        parsed <- cb_name_parser(q = xx$currentName)
+        base_name <- parsed$scientificName
+        if(!is.null(base_name) && base_name != "") {
+            message("Trying base name for currentName: ", base_name)
+            cn_base <- cb_name_usage(base_name)$usage
+            if(nrow(cn_base) > 0) {
+                # Check if the returned match contains our current name or vice versa
+                if(grepl(base_name, cn_base$labelHtml[1], fixed = TRUE) || 
+                   grepl(cn_base$labelHtml[1], xx$currentName, fixed = TRUE)) {
+                    cn = cn_base  # Update the tibble
+                    cn_exists = TRUE
+                    cn_no_results = FALSE
+                    cn_fuzzy_match = cn_base$labelHtml[1]
+                    message("Found currentName via base name: ", cn_base$labelHtml[1])
+                }
+            }
+        }
+    }
+    
     # FALLBACK: If proposedName has no results, try parsing and searching just the base name
     # This handles cases where authorship causes match failures (e.g., commas, special chars)
     if(pn_no_results) {
         parsed <- cb_name_parser(q = xx$proposedName)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
-            message("Trying base name: ", base_name)
+            message("Trying base name for proposedName: ", base_name)
             pn_base <- cb_name_usage(base_name)$usage
             if(nrow(pn_base) > 0) {
                 # Check if the returned match contains our proposed name or vice versa
                 if(grepl(base_name, pn_base$labelHtml[1], fixed = TRUE) || 
                    grepl(pn_base$labelHtml[1], xx$proposedName, fixed = TRUE)) {
+                    pn = pn_base  # Update the tibble
                     pn_exists = TRUE
                     pn_no_results = FALSE
                     pn_fuzzy_match = pn_base$labelHtml[1]
-                    message("Found match via base name: ", pn_base$labelHtml[1])
+                    message("Found proposedName via base name: ", pn_base$labelHtml[1])
                 }
             }
         }
@@ -302,7 +325,7 @@ syn_issue = function(xx) {
             return("JSON-TAG-ERROR")
         } else {
             n = list(usage = 
-                    tibble(
+                    tibble::tibble(
                      labelHtml = aa$labelHtml[xx$name == aa$labelHtml],
                      status = aa$status[xx$name == aa$labelHtml]
                     ))
@@ -339,17 +362,28 @@ syn_issue = function(xx) {
     # check wrong parent 
     if(!is.null(xx$wrongParent)) {
         nwp = cb_name_usage(xx$wrongParent)
+        
+        # If wrongParent not found with full authorship, try base name
+        if(nrow(nwp$usage) == 0 || !nwp$usage$labelHtml[1] == xx$wrongParent) {
+            message("wrongParent not found or not exact match, trying base name")
+            parsed_wp = cb_name_parser(xx$wrongParent)
+            if(!is.null(parsed_wp$scientificName)) {
+                nwp_base = cb_name_usage(parsed_wp$scientificName)
+                if(nrow(nwp_base$usage) > 0) {
+                    message("wrongParent base name found: ", nwp_base$usage$labelHtml[1])
+                    nwp = nwp_base
+                }
+            }
+        }
+        
+        # If wrongParent still not found, treat as FALSE (wrong parent relationship doesn't exist = issue fixed)
         if(nrow(nwp$usage) == 0) {
-            message("wrongParent not found in backbone")
-            return("JSON-TAG-ERROR")
+            message("wrongParent not found in backbone - treating as FALSE (issue may be fixed)")
+            wp = FALSE
+        } else {
+            # cat("XR wrongParent: ",nwp$usage$labelHtml[1],"\n")
+            wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
         }
-
-        if(!nwp$usage$labelHtml[1] == xx$wrongParent) {
-             message("wrongParent not found in backbone")
-             return("JSON-TAG-ERROR")
-        }
-        # cat("XR wrongParent: ",nwp$usage$labelHtml[1],"\n")
-        wp = ifelse(xx$name %in% get_syns(nwp$usage$id[1]), TRUE, FALSE)
     } else {
         wp = NULL
     }
