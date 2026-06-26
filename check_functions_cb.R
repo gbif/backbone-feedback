@@ -24,23 +24,23 @@ wrong_rank = function(xx) {
     r = unique(n[n$labelHtml == xx$name,]$rank)
     if(length(r) > 1) return("JSON-TAG-ERROR")
     if(!is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
-        if(r == xx$wrongRank) {
+        if(toupper(r) == toupper(xx$wrongRank)) {
             return("ISSUE_OPEN")
-        } else if (r == xx$rightRank) {
+        } else if (toupper(r) == toupper(xx$rightRank)) {
             return("ISSUE_CLOSED")
         } else {
             return("JSON-TAG-ERROR")
         }
    }
    if(!is.null(xx$wrongRank) & is.null(xx$rightRank)) {
-       if(r == xx$wrongRank) {
+       if(toupper(r) == toupper(xx$wrongRank)) {
            return("ISSUE_OPEN")
        } else {
            return("JSON-TAG-ERROR")
        }
    }
    if(is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
-       if(r == xx$rightRank) {
+       if(toupper(r) == toupper(xx$rightRank)) {
            return("ISSUE_CLOSED")
        } else {
            return("JSON-TAG-ERROR")
