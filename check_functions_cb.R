@@ -238,6 +238,9 @@ if(!n$usage$labelHtml[1] == xx$name) {
     parents = n$usage$classification$labelHtml
 }
 
+# Strip HTML tags from parents (e.g., <i>Epidemia</i> -> Epidemia)
+parents = gsub("<[^>]+>", "", parents)
+
 # cat(paste(parents,collapse="\n"))
 
 wg = xx$wrongGroup
