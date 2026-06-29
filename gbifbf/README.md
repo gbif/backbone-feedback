@@ -40,11 +40,3 @@ status <- wrong_rank(list(
   rightRank = "kingdom"
 ))
 ```
-
-## Testing
-
-Run tests with:
-
-```r
-devtools::test()
-```
