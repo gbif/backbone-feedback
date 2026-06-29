@@ -14,6 +14,7 @@
 #' and matches exactly, the issue is considered closed.
 #'
 #' @keywords internal
+#' @export
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck

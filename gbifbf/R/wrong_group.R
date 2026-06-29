@@ -26,6 +26,7 @@
 #' HTML tags are stripped from parent names before comparison.
 #'
 #' @keywords internal
+#' @export
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck

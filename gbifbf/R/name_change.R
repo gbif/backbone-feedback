@@ -26,6 +26,7 @@
 #' scenarios where names are removed, renamed, or established as synonyms.
 #'
 #' @keywords internal
+#' @export
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck

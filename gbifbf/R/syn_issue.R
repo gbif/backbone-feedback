@@ -28,6 +28,7 @@
 #' parent taxa and whether it has the expected taxonomic status.
 #'
 #' @keywords internal
+#' @export
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck
