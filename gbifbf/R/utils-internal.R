@@ -1,5 +1,17 @@
 # Internal helper functions for gbifbf package
 
+#' Strip HTML tags from text
+#'
+#' Helper function to remove HTML tags from labelHtml fields
+#' @param html_text Character vector containing HTML
+#' @return Character vector with HTML tags removed
+#' @export
+strip_html <- function(html_text) {
+  if(is.null(html_text) || length(html_text) == 0) return(html_text)
+  # Remove HTML tags
+  gsub("<[^>]+>", "", html_text)
+}
+
 # Parse a taxonomic name
 cb_name_parser <- function(q=NULL) {
   # https://api.checklistbank.org/parser/name?q=Tiphiidae%20Leach%2C%201915
