@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# current_dir=$(pwd)
-# cd /mnt/c/Users/ftw712/Desktop/scripts/shell/bb/backbone-feedback/
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Install the latest version of gbifbf package from source
+echo "Installing gbifbf package from source..."
+Rscript -e 'install.packages("./gbifbf", repos = NULL, type = "source")'
 
 # Check if issue number is provided as command-line argument
 if [ -n "$1" ]; then

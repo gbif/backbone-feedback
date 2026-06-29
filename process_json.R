@@ -3,13 +3,8 @@ library(purrr)
 
 if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }
 
-# Load gbifbf package for helper functions
-if (!requireNamespace('gbifbf', quietly = TRUE)) {
-  # If package not installed, try to load from local directory
-  devtools::load_all("gbifbf")
-} else {
-  library(gbifbf)
-}
+# Load gbifbf package (installed by issue_check.sh)
+library(gbifbf)
 
 args <- commandArgs(trailingOnly = TRUE)
 
