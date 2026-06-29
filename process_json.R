@@ -10,6 +10,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 original_string <- args[1]
 issue = args[2]
+report_file = ifelse(length(args) >= 3, args[3], "report.tsv")
 
 # Check if original_string is a file path and read it if so
 if (file.exists(original_string)) {
@@ -115,6 +116,6 @@ df = data.frame(issue = issue, issue_status = ff$issue_status, issue_type = ff$i
 
 cat(ff$issue_status, "\n")
 
-write.table(df, file = "report.tsv", append = TRUE, row.names = FALSE, col.names = !file.exists("report.tsv"), sep = "\t")
+write.table(df, file = report_file, append = TRUE, row.names = FALSE, col.names = !file.exists(report_file), sep = "\t")
 
 quit(status = 0)

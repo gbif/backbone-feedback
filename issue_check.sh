@@ -8,14 +8,38 @@ cd "$SCRIPT_DIR"
 echo "Installing gbifbf package from source..."
 Rscript -e 'install.packages("./gbifbf", repos = NULL, type = "source")'
 
+# Parse command-line options
+ISSUE_STATE="open"
+REPORT_FILE="report.tsv"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --closed)
+            ISSUE_STATE="closed"
+            REPORT_FILE="report-closed.tsv"
+            shift
+            ;;
+        [0-9]*)
+            # Numeric argument is an issue number
+            SINGLE_ISSUE="$1"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--closed] [issue_number]"
+            exit 1
+            ;;
+    esac
+done
+
 # Check if issue number is provided as command-line argument
-if [ -n "$1" ]; then
-    echo "Processing single issue: $1"
-    issue_array=("$1")
+if [ -n "$SINGLE_ISSUE" ]; then
+    echo "Processing single issue: $SINGLE_ISSUE"
+    issue_array=("$SINGLE_ISSUE")
 else
-    # gh issue list  --search "is:issue is:open project:gbif/23"
-    echo "Fetching all open issues from project..."
-    issues=$(gh issue list --search "is:issue is:open project:gbif/23" --json number --jq '.[].number' --limit 500)
+    # Fetch issues based on state
+    echo "Fetching all $ISSUE_STATE issues from project..."
+    issues=$(gh issue list --search "is:issue is:$ISSUE_STATE project:gbif/23" --json number --jq '.[].number' --limit 500)
     echo $issues
     
     for issue in $issues; do
@@ -45,7 +69,7 @@ do
     COMMENT_BODY=$(echo "$JSON" | jq '.body')
     echo $COMMENT_BODY
     if [ "$COMMENT_BODY" != "null" ] && [ -n "$COMMENT_BODY" ]; then
-        Rscript process_json.R "$COMMENT_BODY" "$issue"
+        Rscript process_json.R "$COMMENT_BODY" "$issue" "$REPORT_FILE"
     else
         echo "No processable JSON comments found for issue $issue (may have unchecked checkbox)"
     fi
