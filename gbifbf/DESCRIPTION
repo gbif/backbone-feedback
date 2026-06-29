@@ -13,11 +13,8 @@ RoxygenNote: 7.0.0
 Imports:
     httr,
     jsonlite,
-    dplyr,
     purrr,
-    tibble,
-    stringr,
-    readr
+    tibble
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
