@@ -1,57 +1,6 @@
-#' Check if a taxon has the wrong rank
-#'
-#' @param xx A list containing name, wrongRank, and/or rightRank
-#' @return A character string indicating the issue status
-#' @export
-wrong_rank = function(xx) {
-    n = cb_name_usage(xx$name)$usage 
-    if(nrow(n) == 0) return("JSON-TAG-ERROR")
-    if(!n$labelHtml[1] == xx$name) {
-        # look for the name in the alternatives
-        message("Name not found looking in alternatives")
-        a = cb_name_usage(xx$name,verbose=TRUE)$alternatives
-        if(nrow(a) == 0) {
-            message("No alternatives found")
-            return("JSON-TAG-ERROR")
-        } else if (!xx$name %in% a$labelHtml) {
-            message("Name not found in alternatives")
-            return("JSON-TAG-ERROR")
-        } else {
-            n = list(usage = 
-                    tibble::tibble(
-                     labelHtml = a$labelHtml[xx$name == a$labelHtml],
-                     rank = a$rank[xx$name == a$labelHtml]
-                    ))
-        }
-    }
-    r = unique(n[n$labelHtml == xx$name,]$rank)
-    if(length(r) > 1) return("JSON-TAG-ERROR")
-    if(!is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
-        if(toupper(r) == toupper(xx$wrongRank)) {
-            return("ISSUE_OPEN")
-        } else if (toupper(r) == toupper(xx$rightRank)) {
-            return("ISSUE_CLOSED")
-        } else {
-            return("JSON-TAG-ERROR")
-        }
-   }
-   if(!is.null(xx$wrongRank) & is.null(xx$rightRank)) {
-       if(toupper(r) == toupper(xx$wrongRank)) {
-           return("ISSUE_OPEN")
-       } else {
-           return("JSON-TAG-ERROR")
-       }
-   }
-   if(is.null(xx$wrongRank) & !is.null(xx$rightRank)) {
-       if(toupper(r) == toupper(xx$rightRank)) {
-           return("ISSUE_CLOSED")
-       } else {
-           return("JSON-TAG-ERROR")
-       }
-   }
-}
+# Internal checker functions for processing JSON tags
 
-# bad name 
+# Check if a bad name exists in the backbone
 bad_name = function(xx) {
     bn = cb_name_usage(xx$badName)$usage 
     if(nrow(bn) == 0) return("ISSUE_CLOSED")
@@ -63,6 +12,7 @@ bad_name = function(xx) {
     return(out)
 }
 
+# Check if a missing name has been added to the backbone
 missing_name = function(xx) {
     mn = cb_name_usage(xx$missingName)$usage
     
@@ -75,6 +25,7 @@ missing_name = function(xx) {
     return(out)
 }
 
+# Check if a name change has been implemented
 name_change = function(xx) {
     
     cn = cb_name_usage(xx$currentName)$usage
@@ -216,6 +167,7 @@ name_change = function(xx) {
 
 }
 
+# Check if a taxon is in the wrong taxonomic group
 wrong_group = function(xx) {
 n = cb_name_usage(xx$name)
 
@@ -312,8 +264,7 @@ if(wg_check) {
 return(out)
 }
 
-
-
+# Check synonym status issues
 syn_issue = function(xx) {
     n = cb_name_usage(xx$name)
     
