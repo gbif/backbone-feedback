@@ -114,7 +114,7 @@ name_change = function(xx) {
     
     # FALLBACK: If currentName has no results, try parsing and searching just the base name
     # This handles cases where authorship causes match failures (e.g., commas, special chars)
-    if(cn_no_results) {
+    if(!cn_exists) {
         parsed <- cb_name_parser(q = xx$currentName)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
@@ -136,7 +136,7 @@ name_change = function(xx) {
     
     # FALLBACK: If proposedName has no results, try parsing and searching just the base name
     # This handles cases where authorship causes match failures (e.g., commas, special chars)
-    if(pn_no_results) {
+    if(!pn_exists) {
         parsed <- cb_name_parser(q = xx$proposedName)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
@@ -343,7 +343,30 @@ syn_issue = function(xx) {
             return("JSON-TAG-ERROR")
         } else if (!xx$name %in% aa$labelHtml) {
             message("Name not found in alternatives")
-            return("JSON-TAG-ERROR")
+            
+            # Try base name search in alternatives before giving up
+            parsed <- cb_name_parser(q = xx$name)
+            base_name <- parsed$scientificName
+            if(!is.null(base_name) && base_name != "") {
+                message("Trying base name in alternatives: ", base_name)
+                # Check if base name matches any alternative (partial match)
+                base_matches <- grepl(base_name, aa$labelHtml, fixed = TRUE)
+                if(any(base_matches)) {
+                    message("Found base name match in alternatives")
+                    # Use the first matching alternative
+                    match_idx <- which(base_matches)[1]
+                    n = list(usage = 
+                            tibble::tibble(
+                             labelHtml = aa$labelHtml[match_idx],
+                             status = aa$status[match_idx]
+                            ))
+                } else {
+                    message("Base name not found in alternatives either")
+                    return("JSON-TAG-ERROR")
+                }
+            } else {
+                return("JSON-TAG-ERROR")
+            }
         } else {
             n = list(usage = 
                     tibble::tibble(

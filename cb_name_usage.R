@@ -25,7 +25,7 @@ cb_name_usage = function(
 
   alternatives <- tt |> purrr::pluck("alternatives") |> tibble::as_tibble()
   usage <- tt |> purrr::pluck("usage") |> tibble::as_tibble()
-  
+
   # Clean HTML tags from labelHtml fields
   if("labelHtml" %in% names(usage)) {
     usage$labelHtml <- strip_html(usage$labelHtml)
