@@ -59,7 +59,7 @@ name_change = function(xx) {
     if(!pn_exists && !pn_no_results) {
         a = cb_name_usage(xx$proposedName,verbose=TRUE)$alternatives
         if(nrow(a) == 0) {
-            message("No alternatives found")
+            gbif_message("No alternatives found")
             pn_exists = FALSE
         } else {
             if(xx$proposedName %in% a$labelHtml) { 
@@ -76,7 +76,7 @@ name_change = function(xx) {
         parsed <- cb_name_parser(q = xx$currentName)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
-            message("Trying base name for currentName: ", base_name)
+            gbif_message("Trying base name for currentName: ", base_name)
             cn_base <- cb_name_usage(base_name)$usage
             if(nrow(cn_base) > 0) {
                 # Check if the returned match contains our current name or vice versa
@@ -86,7 +86,7 @@ name_change = function(xx) {
                     cn_exists = TRUE
                     cn_no_results = FALSE
                     cn_fuzzy_match = cn_base$labelHtml[1]
-                    message("Found currentName via base name: ", cn_base$labelHtml[1])
+                    gbif_message("Found currentName via base name: ", cn_base$labelHtml[1])
                 }
             }
         }
@@ -98,7 +98,7 @@ name_change = function(xx) {
         parsed <- cb_name_parser(q = xx$proposedName)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
-            message("Trying base name for proposedName: ", base_name)
+            gbif_message("Trying base name for proposedName: ", base_name)
             pn_base <- cb_name_usage(base_name)$usage
             if(nrow(pn_base) > 0) {
                 # Check if the returned match contains our proposed name or vice versa
@@ -108,7 +108,7 @@ name_change = function(xx) {
                     pn_exists = TRUE
                     pn_no_results = FALSE
                     pn_fuzzy_match = pn_base$labelHtml[1]
-                    message("Found proposedName via base name: ", pn_base$labelHtml[1])
+                    gbif_message("Found proposedName via base name: ", pn_base$labelHtml[1])
                 }
             }
         }

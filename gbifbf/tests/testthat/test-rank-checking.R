@@ -11,7 +11,7 @@ test_that("wrong_rank", {
       name = "Animalia",
       wrongRank = "kingdom",
       rightRank = "phylum"
-    )),
+    )),  
     "ISSUE_OPEN")
 
   # Test with both wrongRank and rightRank - issue closed (has right rank)
@@ -21,7 +21,7 @@ test_that("wrong_rank", {
       name = "Animalia",
       wrongRank = "phylum",
       rightRank = "kingdom"
-    )),
+    )),  
     "ISSUE_CLOSED")
 
   # Test with only wrongRank - issue open (matches wrong rank)
@@ -31,7 +31,7 @@ test_that("wrong_rank", {
       name = "Amphibia",
       wrongRank = "class",
       rightRank = NULL
-    )),
+    )),  
     "ISSUE_OPEN")
 
   # Test with only rightRank - issue closed (matches right rank)
@@ -41,7 +41,7 @@ test_that("wrong_rank", {
       name = "Amphibia",
       wrongRank = NULL,
       rightRank = "class"
-    )),
+    )),  
     "ISSUE_CLOSED")
 
   # Test with only rightRank - error (doesn't match)
@@ -51,7 +51,7 @@ test_that("wrong_rank", {
       name = "Amphibia",
       wrongRank = NULL,
       rightRank = "kingdom"
-    )),
+    )),  
     "JSON-TAG-ERROR")
 
   # Test with non-existent name
@@ -61,7 +61,7 @@ test_that("wrong_rank", {
       name = "Doggggg",
       wrongRank = "species",
       rightRank = "genus"
-    )),
+    )),  
     "JSON-TAG-ERROR")
   
   # Test with only wrongRank - error (doesn't match)
@@ -71,7 +71,7 @@ test_that("wrong_rank", {
       name = "Animalia",
       wrongRank = "phylum",
       rightRank = NULL
-    )),
+    )),  
     "JSON-TAG-ERROR")
 
 })
@@ -81,23 +81,23 @@ test_that("bad_name", {
 
   expect_equal(
     bad_name(
-    list(badName = "Dog dog Waller 2025")),
+    list(badName = "Dog dog Waller 2025")),  
     "ISSUE_CLOSED")
 
     expect_equal(
     bad_name(
-    list(badName = "Animalia")), 
+    list(badName = "Animalia")),   
     "ISSUE_OPEN")
 
     expect_equal(
     bad_name(
-    list()), "ISSUE_CLOSED"
+    list()),   "ISSUE_CLOSED"
     )
     
   # Test another real taxonomic name
   expect_equal(
     bad_name(
-    list(badName = "Amphibia")),
+    list(badName = "Amphibia")),  
     "ISSUE_OPEN")
   
   # Test array of bad names
@@ -130,18 +130,18 @@ test_that("missing_name", {
 
   expect_equal(
     missing_name(
-    list(missingName = "Dog dog Waller 2025")),
+    list(missingName = "Dog dog Waller 2025")),  
     "ISSUE_OPEN")
 
   expect_equal(
     missing_name(
-    list(missingName = "Animalia")),
+    list(missingName = "Animalia")),  
     "ISSUE_CLOSED")
   
   # Test another non-existent name
   expect_equal(
     missing_name(
-    list(missingName = "Fakeus taxonomicus Smith 2099")),
+    list(missingName = "Fakeus taxonomicus Smith 2099")),  
     "ISSUE_OPEN")
 
 })
@@ -152,21 +152,21 @@ test_that("name_change", {
   expect_equal(
     name_change(
     list(currentName = "Dog dog Waller 2025",
-         proposedName = "Dog dog Waller 2025")),
+         proposedName = "Dog dog Waller 2025")),  
     "JSON-TAG-ERROR")
 
     expect_equal(
     name_change(
         list(
         currentName = "Animalia",
-        proposedName = "Dog")),
+        proposedName = "Dog")),  
     "ISSUE_OPEN")
 
     expect_equal(
     name_change(
         list(
         currentName = "Cryptophyta",
-        proposedName = "Cryptista Cavalier-Smith, 1989")),
+        proposedName = "Cryptista Cavalier-Smith, 1989")),  
     "ISSUE_CLOSED")
     
   # Test with non-existent proposed name but existing current name
@@ -174,7 +174,7 @@ test_that("name_change", {
     name_change(
         list(
         currentName = "Amphibia",
-        proposedName = "Notarealname taxonomicus")),
+        proposedName = "Notarealname taxonomicus")),  
     "ISSUE_OPEN")
   
   # Test with non-existent current name but existing proposed name
@@ -182,7 +182,7 @@ test_that("name_change", {
     name_change(
         list(
         currentName = "Notarealname fake",
-        proposedName = "Animalia")),
+        proposedName = "Animalia")),  
     "ISSUE_CLOSED")
   
   # Test with both names non-existent
@@ -190,7 +190,7 @@ test_that("name_change", {
     name_change(
         list(
         currentName = "Fakeus one",
-        proposedName = "Fakeus two")),
+        proposedName = "Fakeus two")),  
     "JSON-TAG-ERROR")
 
 }) 

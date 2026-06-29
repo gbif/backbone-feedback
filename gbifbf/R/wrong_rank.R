@@ -8,13 +8,13 @@ wrong_rank = function(xx) {
     if(nrow(n) == 0) return("JSON-TAG-ERROR")
     if(!n$labelHtml[1] == xx$name) {
         # look for the name in the alternatives
-        message("Name not found looking in alternatives")
+        gbif_message("Name not found looking in alternatives")
         a = cb_name_usage(xx$name,verbose=TRUE)$alternatives
         if(nrow(a) == 0) {
-            message("No alternatives found")
+            gbif_message("No alternatives found")
             return("JSON-TAG-ERROR")
         } else if (!xx$name %in% a$labelHtml) {
-            message("Name not found in alternatives")
+            gbif_message("Name not found in alternatives")
             return("JSON-TAG-ERROR")
         } else {
             n = list(usage = 

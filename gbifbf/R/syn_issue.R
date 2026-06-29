@@ -40,14 +40,14 @@ syn_issue = function(xx) {
         parsed <- cb_name_parser(q = xx$name)
         base_name <- parsed$scientificName
         if(!is.null(base_name) && base_name != "") {
-            message("Trying base name for syn_issue: ", base_name)
+            gbif_message("Trying base name for syn_issue: ", base_name)
             n_base <- cb_name_usage(base_name)
             if(nrow(n_base$usage) > 0) {
                 # Check if the returned match contains our name or vice versa
                 if(grepl(base_name, n_base$usage$labelHtml[1], fixed = TRUE) || 
                    grepl(n_base$usage$labelHtml[1], xx$name, fixed = TRUE)) {
                     n <- n_base  # Update the result
-                    message("Found name via base name: ", n_base$usage$labelHtml[1])
+                    gbif_message("Found name via base name: ", n_base$usage$labelHtml[1])
                 }
             }
         }
@@ -57,23 +57,23 @@ syn_issue = function(xx) {
 
     if(!n$usage$labelHtml[1] == xx$name) {
        # look for the name in the alternatives 
-         message("Name not found looking in alternatives")
+         gbif_message("Name not found looking in alternatives")
         aa = cb_name_usage(xx$name,verbose=TRUE)$alternatives
         if(nrow(aa) == 0) {
-            message("No alternatives found")
+            gbif_message("No alternatives found")
             return("JSON-TAG-ERROR")
         } else if (!xx$name %in% aa$labelHtml) {
-            message("Name not found in alternatives")
+            gbif_message("Name not found in alternatives")
             
             # Try base name search in alternatives before giving up
             parsed <- cb_name_parser(q = xx$name)
             base_name <- parsed$scientificName
             if(!is.null(base_name) && base_name != "") {
-                message("Trying base name in alternatives: ", base_name)
+                gbif_message("Trying base name in alternatives: ", base_name)
                 # Check if base name matches any alternative (partial match)
                 base_matches <- grepl(base_name, aa$labelHtml, fixed = TRUE)
                 if(any(base_matches)) {
-                    message("Found base name match in alternatives")
+                    gbif_message("Found base name match in alternatives")
                     # Use the first matching alternative
                     match_idx <- which(base_matches)[1]
                     n = list(usage = 
@@ -82,7 +82,7 @@ syn_issue = function(xx) {
                              status = aa$status[match_idx]
                             ))
                 } else {
-                    message("Base name not found in alternatives either")
+                    gbif_message("Base name not found in alternatives either")
                     return("JSON-TAG-ERROR")
                 }
             } else {
@@ -103,7 +103,7 @@ syn_issue = function(xx) {
     # cat("XR status: ",n$usage$status[1],"\n")
 
     if(is.null(xx$rightStatus) & is.null(xx$wrongStatus)) {
-        message("Ignoring rightStatus and wrongStatus")
+        gbif_message("Ignoring rightStatus and wrongStatus")
     }
     
     # check right parent 
@@ -112,19 +112,19 @@ syn_issue = function(xx) {
         
         # If rightParent not found with full authorship, try base name
         if(nrow(nrp$usage) == 0 || !nrp$usage$labelHtml[1] == xx$rightParent) {
-            message("rightParent not found or not exact match, trying base name")
+            gbif_message("rightParent not found or not exact match, trying base name")
             parsed_rp = cb_name_parser(xx$rightParent)
             if(!is.null(parsed_rp$scientificName)) {
                 nrp_base = cb_name_usage(parsed_rp$scientificName)
                 if(nrow(nrp_base$usage) > 0) {
-                    message("rightParent base name found: ", nrp_base$usage$labelHtml[1])
+                    gbif_message("rightParent base name found: ", nrp_base$usage$labelHtml[1])
                     nrp = nrp_base
                 }
             }
         }
         
         if(nrow(nrp$usage) == 0) {
-            message("rightParent not found in backbone")
+            gbif_message("rightParent not found in backbone")
             return("JSON-TAG-ERROR")
         }
         if(!nrp$usage$labelHtml[1] == xx$rightParent) {
@@ -132,7 +132,7 @@ syn_issue = function(xx) {
             parsed_check = cb_name_parser(xx$rightParent)
             if(is.null(parsed_check$scientificName) || 
                !grepl(parsed_check$scientificName, nrp$usage$labelHtml[1], fixed = TRUE)) {
-                message("rightParent not found in backbone")
+                gbif_message("rightParent not found in backbone")
                 return("JSON-TAG-ERROR")
             }
         }
@@ -149,12 +149,12 @@ syn_issue = function(xx) {
         
         # If wrongParent not found with full authorship, try base name
         if(nrow(nwp$usage) == 0 || !nwp$usage$labelHtml[1] == xx$wrongParent) {
-            message("wrongParent not found or not exact match, trying base name")
+            gbif_message("wrongParent not found or not exact match, trying base name")
             parsed_wp = cb_name_parser(xx$wrongParent)
             if(!is.null(parsed_wp$scientificName)) {
                 nwp_base = cb_name_usage(parsed_wp$scientificName)
                 if(nrow(nwp_base$usage) > 0) {
-                    message("wrongParent base name found: ", nwp_base$usage$labelHtml[1])
+                    gbif_message("wrongParent base name found: ", nwp_base$usage$labelHtml[1])
                     nwp = nwp_base
                 }
             }
@@ -162,7 +162,7 @@ syn_issue = function(xx) {
         
         # If wrongParent still not found, treat as FALSE (wrong parent relationship doesn't exist = issue fixed)
         if(nrow(nwp$usage) == 0) {
-            message("wrongParent not found in backbone - treating as FALSE (issue may be fixed)")
+            gbif_message("wrongParent not found in backbone - treating as FALSE (issue may be fixed)")
             wp = FALSE
         } else {
             # cat("XR wrongParent: ",nwp$usage$labelHtml[1],"\n")

@@ -1,5 +1,12 @@
 # Internal helper functions for gbifbf package
 
+# Verbose message helper - respects global option
+gbif_message <- function(...) {
+  if (getOption("gbifbf.verbose", default = TRUE)) {
+    message(...)
+  }
+}
+
 #' Strip HTML tags from text
 #'
 #' Helper function to remove HTML tags from labelHtml fields

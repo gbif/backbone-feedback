@@ -36,14 +36,14 @@ if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
 
 if(!n$usage$labelHtml[1] == xx$name) {
     # look for the name in the alternatives
-    message("Name not found looking in alternatives")
+    gbif_message("Name not found looking in alternatives")
     a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
     if(nrow(a) == 0) {
-        message("No alternatives found")
+        gbif_message("No alternatives found")
         return("JSON-TAG-ERROR")
     }     
     if(!xx$name %in% a$labelHtml) {
-        message("Name not found in alternatives")
+        gbif_message("Name not found in alternatives")
         return("JSON-TAG-ERROR")
     } else {
         TAXON_ID = a$id[xx$name == a$labelHtml]
@@ -70,7 +70,7 @@ if(!is.null(wg)) {
 wg_check = wg %in% parents
 if(!wg_check) {
     # try basename search 
-    message("trying basename search for wrongGroup")
+    gbif_message("trying basename search for wrongGroup")
     wg = cb_name_parser(q=wg)$uninomial
     wg_check = wg %in% parents
 }
@@ -82,7 +82,7 @@ if(!is.null(rg)) {
     rg_check = rg %in% parents
 if(!rg_check) {
     # try basename search
-    message("trying basename search for rightGroup")
+    gbif_message("trying basename search for rightGroup")
     rg = cb_name_parser(q=rg)$uninomial
     rg_check = rg %in% parents
 }

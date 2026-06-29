@@ -15,7 +15,7 @@ test_that("syn_issue", {
         rightStatus = "SYNONYM",
         rightParent = "Calopteryx splendens (Harris, 1780)",
         wrongParent = NULL
-    )),
+    )),  
     "ISSUE_CLOSED")
 
     expect_equal(
@@ -26,7 +26,7 @@ test_that("syn_issue", {
         rightStatus = "ACCEPTED",
         rightParent = NULL,
         wrongParent = "Calopteryx splendens (Harris, 1780)"
-    )), 
+    )),   
     "ISSUE_OPEN")
 
     expect_equal(
@@ -37,7 +37,7 @@ test_that("syn_issue", {
         rightStatus = "SYNONYM",
         rightParent = NULL,
         wrongParent = NULL
-    )),
+    )),  
     "ISSUE_CLOSED")
 
     expect_equal(
@@ -48,7 +48,7 @@ test_that("syn_issue", {
         rightStatus = NULL,
         rightParent = "Calopteryx splendens (Harris, 1780)",
         wrongParent = NULL
-    )),
+    )),  
     "ISSUE_CLOSED")
 
     expect_equal(
@@ -59,7 +59,7 @@ test_that("syn_issue", {
           rightStatus = "SYNONYM",
           rightParent = NULL,
           wrongParent = NULL
-        )),
+        )),  
       "JSON-TAG-ERROR"
     )
 
