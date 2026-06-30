@@ -19,6 +19,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+      
+      - name: Checkout automation repository
+        uses: actions/checkout@v5
+        with:
+          repository: gbif/backbone-feedback-automation
+          path: ./automation
     
       - name: Check GitHub CLI version
         run: gh --version
@@ -36,7 +42,7 @@ jobs:
       
       - name: Install gbifbf package
         run: |
-          R CMD INSTALL gbifbf
+          R CMD INSTALL ./automation/gbifbf
       
       - name: Run gbifbf package tests
         env:
@@ -44,7 +50,7 @@ jobs:
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
-          Rscript -e "testthat::test_dir('gbifbf/tests/testthat')"
+          Rscript -e "testthat::test_dir('./automation/gbifbf/tests/testthat')"
 
       - name: Remove report.tsv if it exists
         run: |
@@ -61,8 +67,8 @@ jobs:
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
           ls 
-          chmod +x ./issue_check.sh
-          ./issue_check.sh ${{ inputs.issue_number }}
+          chmod +x ./automation/issue_check.sh
+          ./automation/issue_check.sh ${{ inputs.issue_number }}
 
       - name: Check if report.tsv exists
         run: |
@@ -79,5 +85,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             ls 
-            chmod +x ./create_github_label.sh
-            ./create_github_label.sh || true
+            chmod +x ./automation/create_github_label.sh
+            ./automation/create_github_label.sh || true

@@ -30,6 +30,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Checkout automation repository
+        uses: actions/checkout@v4
+        with:
+          repository: gbif/backbone-feedback-automation
+          path: ./automation
+      
       - name: Setup GitHub CLI
         run: |
           gh --version
@@ -108,7 +114,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install requests
-          cd agent
+          cd ./automation/agent
           pip install -r requirements.txt
       
       - name: Process issues
@@ -163,10 +169,10 @@ jobs:
             FULL_TEXT="${ISSUE_TITLE}"$'\n\n'"${ISSUE_BODY}"
             
             # Generate tags
-            cd agent
+            cd ./automation/agent
             RESULT=$(python cli.py "$FULL_TEXT" 2>&1)
             EXIT_CODE=$?
-            cd ..
+            cd ../..
             
             if [ $EXIT_CODE -ne 0 ]; then
               echo "Failed to generate tags for issue #${issue_number}"
@@ -189,7 +195,7 @@ jobs:
             COL_STATUS="UNKNOWN"
             if [ -n "$GBIF_USER" ] && [ -n "$GBIF_PWD" ]; then
               set +e
-              R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
+              R_OUTPUT=$(Rscript ./automation/process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
               R_EXIT_CODE=$?
               set -e
               
