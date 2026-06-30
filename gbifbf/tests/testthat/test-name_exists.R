@@ -78,3 +78,12 @@ test_that("name_exists returns consistent ID for same name", {
   expect_equal(result1$id, result2$id)
   expect_equal(result1$exists, result2$exists)
 })
+
+test_that("name_exists finds names via search endpoint (Strategy 5)", {
+  # Test case for names that only appear in search endpoint results
+  # "Synergus Faust, J., 1895" (ID: 8HRN9) is not found by match endpoint
+  # but is found by search endpoint
+  result <- name_exists("Synergus Faust, J., 1895")
+  expect_true(result$exists)
+  expect_equal(result$id, "8HRN9")
+})

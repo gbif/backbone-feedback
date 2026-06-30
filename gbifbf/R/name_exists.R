@@ -22,6 +22,7 @@
 #'   \item Parse name to extract base name (scientific name without author),
 #'         search with base name, then verify exact match in results
 #'   \item Strip special characters and search, then verify exact match
+#'   \item Use the search endpoint which may find name variants not returned by match endpoint
 #' }
 #'
 #' All strategies validate that the EXACT input string appears in the results
@@ -134,6 +135,35 @@ name_exists <- function(name, verbose = FALSE) {
       }
     }
   }
+  
+  # Strategy 5: Use search endpoint (broader search that may find variants)
+  gbif_message("Strategy 5: Trying search endpoint")
+  tryCatch({
+    url <- "https://api.checklistbank.org/dataset/3LXRC/nameusage/search"
+    user <- Sys.getenv("GBIF_USER")
+    pwd <- Sys.getenv("GBIF_PWD")
+    
+    search_result <- httr::GET(url,
+                               httr::authenticate(user, pwd),
+                               query = list(q = name, limit = 100)) |>
+      httr::content(as = "text", encoding = "UTF-8") |>
+      jsonlite::fromJSON(flatten = TRUE)
+    
+    if(!is.null(search_result$result) && nrow(search_result$result) > 0) {
+      # Strip HTML from usage.labelHtml to compare
+      search_result$result$usage.labelHtml_stripped <- strip_html(search_result$result$usage.labelHtml)
+      
+      # Look for exact match
+      match_idx <- which(search_result$result$usage.labelHtml_stripped == name)
+      if(length(match_idx) > 0) {
+        col_id <- search_result$result$id[match_idx[1]]
+        gbif_message("Found exact match via search endpoint (ID: ", col_id, ")")
+        return(list(exists = TRUE, id = col_id))
+      }
+    }
+  }, error = function(e) {
+    gbif_message("Search endpoint error: ", e$message)
+  })
   
   # Name not found
   gbif_message("Name not found in ChecklistBank")
