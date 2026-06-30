@@ -4,8 +4,13 @@
 
 This repository contains the feedback reported to GBIF relating to the GBIF Backbone taxonomy.
 
-## Backbone Feedback JSON Tag Agent
+## Automation Code
 
-An AI-powered agent that converts plain English backbone feedback issues into structured JSON tags for automation. All suggested translations are reviewed before being accepted or edited by a human.
+The automation code for processing backbone feedback (R package, AI agent, and orchestration scripts) is maintained in a separate repository:
+
+**[gbif/backbone-feedback-automation](https://github.com/gbif/backbone-feedback-automation)**
+
+This repository contains:
+- Issue tracking for backbone-feedback
 
 
