@@ -31,40 +31,24 @@
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck
 wrong_group = function(xx) {
-n = cb_name_usage(xx$name)
-
-if(nrow(n$usage) == 0) return("JSON-TAG-ERROR")
-
-if(!n$usage$labelHtml[1] == xx$name) {
-    # look for the name in the alternatives
-    gbif_message("Name not found looking in alternatives")
-    a = cb_name_usage(xx$name,verbose=TRUE)$alternatives    
-    if(nrow(a) == 0) {
-        gbif_message("No alternatives found")
-        return("JSON-TAG-ERROR")
-    }     
-    if(!xx$name %in% a$labelHtml) {
-        gbif_message("Name not found in alternatives")
-        return("JSON-TAG-ERROR")
-    } else {
-        TAXON_ID = a$id[xx$name == a$labelHtml]
-        cc = cb_name_usage_search(TAXON_ID = TAXON_ID)$result 
-        parents = cc[cc$id==TAXON_ID,]$classification[[1]]$labelHtml
-    }
-} else {
+    # Check if name exists using multi-strategy search
+    result = name_exists(xx$name)
+    if(!result$exists) return("JSON-TAG-ERROR")
+    
+    # Get full details directly from cb_name_usage
+    n = cb_name_usage(xx$name)
+    
+    # Extract parents from classification  
+    # classification$labelHtml is a list-column, take the first element
     parents = n$usage$classification$labelHtml
-}
-
-# Strip HTML tags from parents (e.g., <i>Epidemia</i> -> Epidemia)
-parents = gsub("<[^>]+>", "", parents)
-
-# cat(paste(parents,collapse="\n"))
-
-wg = xx$wrongGroup
-rg = xx$rightGroup
-
-# cat("wrong group: ",wg,"\n")
-# cat("right group: ",rg,"\n")
+    if(is.null(parents) || length(parents) == 0) return("JSON-TAG-ERROR")
+    if(is.list(parents)) parents = parents[[1]]
+    
+    # Strip HTML tags from parents (e.g., <i>Epidemia</i> -> Epidemia)
+    parents = strip_html(parents)
+    
+    wg = xx$wrongGroup
+    rg = xx$rightGroup
 
 
 if(!is.null(wg)) {

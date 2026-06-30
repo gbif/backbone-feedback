@@ -33,141 +33,49 @@
 #' @importFrom tibble tibble
 name_change = function(xx) {
     
-    cn = cb_name_usage(xx$currentName)$usage
-    
-    if(nrow(cn) == 0) { 
-        cn_exists = FALSE
-        cn_fuzzy_match = NULL
-        cn_no_results = TRUE  # Track when query returns nothing at all
-    } else {
-        cn_exists = cn$labelHtml[1] == xx$currentName
-        cn_fuzzy_match = cn$labelHtml[1]  # Store the fuzzy match result
-        cn_no_results = FALSE
+    # Validate input
+    if(is.null(xx$proposedName) || is.null(xx$currentName)) {
+        return("JSON-TAG-ERROR")
     }
-    # cat("current name exists: ",cn_exists,"\n")
-    pn = cb_name_usage(xx$proposedName)$usage
-
-    if(nrow(pn) == 0) { 
-        pn_exists = FALSE
-        pn_fuzzy_match = NULL
-        pn_no_results = TRUE  # Track when query returns nothing at all
-    } else {
-        pn_exists = pn$labelHtml[1] == xx$proposedName
-        pn_fuzzy_match = pn$labelHtml[1]  # Store the fuzzy match result
-        pn_no_results = FALSE
-    }
-    # check alternatives if proposed name does not exist
-    if(!pn_exists && !pn_no_results) {
-        a = cb_name_usage(xx$proposedName,verbose=TRUE)$alternatives
-        if(nrow(a) == 0) {
-            gbif_message("No alternatives found")
-            pn_exists = FALSE
-        } else {
-            if(xx$proposedName %in% a$labelHtml) { 
-                pn_exists = TRUE
-            } else {
-                pn_exists = FALSE
-            }
-        }
-    }
-    
-    # FALLBACK: If currentName has no results, try parsing and searching just the base name
-    # This handles cases where authorship causes match failures (e.g., commas, special chars)
-    if(!cn_exists) {
-        parsed <- cb_name_parser(q = xx$currentName)
-        base_name <- parsed$scientificName
-        if(!is.null(base_name) && base_name != "") {
-            gbif_message("Trying base name for currentName: ", base_name)
-            cn_base <- cb_name_usage(base_name)$usage
-            if(nrow(cn_base) > 0) {
-                # Check if the returned match contains our current name or vice versa
-                if(grepl(base_name, cn_base$labelHtml[1], fixed = TRUE) || 
-                   grepl(cn_base$labelHtml[1], xx$currentName, fixed = TRUE)) {
-                    cn = cn_base  # Update the tibble
-                    cn_exists = TRUE
-                    cn_no_results = FALSE
-                    cn_fuzzy_match = cn_base$labelHtml[1]
-                    gbif_message("Found currentName via base name: ", cn_base$labelHtml[1])
-                }
-            }
-        }
-    }
-    
-    # FALLBACK: If proposedName has no results, try parsing and searching just the base name
-    # This handles cases where authorship causes match failures (e.g., commas, special chars)
-    if(!pn_exists) {
-        parsed <- cb_name_parser(q = xx$proposedName)
-        base_name <- parsed$scientificName
-        if(!is.null(base_name) && base_name != "") {
-            gbif_message("Trying base name for proposedName: ", base_name)
-            pn_base <- cb_name_usage(base_name)$usage
-            if(nrow(pn_base) > 0) {
-                # Check if the returned match contains our proposed name or vice versa
-                if(grepl(base_name, pn_base$labelHtml[1], fixed = TRUE) || 
-                   grepl(pn_base$labelHtml[1], xx$proposedName, fixed = TRUE)) {
-                    pn = pn_base  # Update the tibble
-                    pn_exists = TRUE
-                    pn_no_results = FALSE
-                    pn_fuzzy_match = pn_base$labelHtml[1]
-                    gbif_message("Found proposedName via base name: ", pn_base$labelHtml[1])
-                }
-            }
-        }
-    }
-
-    # cat("proposed name exists: ",pn_exists,"\n")
     if(xx$proposedName == xx$currentName) {
         return("JSON-TAG-ERROR")
     }
-    if(is.null(xx$proposedName) | is.null(xx$currentName)) {
-        return("JSON-TAG-ERROR")
-    }
     
-    # CASE 1: currentName returns 0 results (removed) AND proposedName exists → CLOSED
-    if(cn_no_results && pn_exists) {
+    # Check if both names exist using multi-strategy search
+    cn_result = name_exists(xx$currentName)
+    pn_result = name_exists(xx$proposedName)
+    
+    cn_exists = cn_result$exists
+    pn_exists = pn_result$exists
+    
+    # CASE 1: currentName removed (doesn't exist) AND proposedName exists → CLOSED
+    if(!cn_exists && pn_exists) {
         return("ISSUE_CLOSED")
     }
     
-    # CASE 2: currentName returns 0 results AND proposedName also returns 0 → ERROR
-    if(cn_no_results && pn_no_results) {
+    # CASE 2: Neither name exists → ERROR (can't validate the change)
+    if(!cn_exists && !pn_exists) {
         return("JSON-TAG-ERROR")
     }
     
-    # CASE 3: Fuzzy match - currentName query returned the proposedName → CLOSED
-    if(!is.null(cn_fuzzy_match) && !is.null(xx$proposedName)) {
-        if(cn_fuzzy_match == xx$proposedName) {
-            return("ISSUE_CLOSED")
-        }
+    # CASE 3: currentName exists AND proposedName doesn't exist → OPEN
+    if(cn_exists && !pn_exists) {
+        return("ISSUE_OPEN")
     }
     
-    # CASE 4: Fuzzy match - proposedName query returned the currentName → OPEN
-    if(!is.null(pn_fuzzy_match) && !is.null(xx$currentName)) {
-        if(pn_fuzzy_match == xx$currentName) {
+    # CASE 4: Both names exist - check if they're synonyms
+    if(cn_exists && pn_exists) {
+        # Get synonyms of the proposedName (accepted name)
+        syns = get_syns(pn_result$id)
+        # If currentName is listed as a synonym of proposedName, issue is closed
+        if(xx$currentName %in% syns) {
+            return("ISSUE_CLOSED")
+        } else {
+            # Both exist but not synonyms - issue still open
             return("ISSUE_OPEN")
         }
     }
     
-    # CASE 5: Both names exist exactly as specified
-    if(cn_exists & pn_exists) {
-        # Check if they're synonyms - if so, issue is closed
-        ifelse(cn$labelHtml[1] %in% get_syns(pn$id[1]),
-        return("ISSUE_CLOSED"),
-        return("ISSUE_OPEN"))
-    }
-    
-    # CASE 6: currentName doesn't exist (fuzzy match or no results) AND proposedName exists → CLOSED
-    if(!cn_exists & pn_exists) {
-        return("ISSUE_CLOSED")
-    }
-    
-    # CASE 7: currentName exists AND proposedName doesn't exist → OPEN
-    if(cn_exists & !pn_exists) {
-        return("ISSUE_OPEN")
-    }
-    
-    # CASE 8: Neither exists exactly, no fuzzy matches found → ERROR
-    if(!cn_exists & !pn_exists) {
-        return("JSON-TAG-ERROR")
-    }
-
+    # Fallback (shouldn't reach here)
+    return("JSON-TAG-ERROR")
 }

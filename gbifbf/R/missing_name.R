@@ -19,13 +19,9 @@
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr pluck
 missing_name = function(xx) {
-    mn = cb_name_usage(xx$missingName)$usage
+    # Handle empty or null missingName
+    if(is.null(xx$missingName) || length(xx$missingName) == 0) return("ISSUE_OPEN")
     
-    if(nrow(mn) == 0) return("ISSUE_OPEN")
-    if(mn$labelHtml[1] == xx$missingName) {
-        out = "ISSUE_CLOSED"
-    } else {
-        out = "ISSUE_OPEN"
-    }
-    return(out)
+    result = name_exists(xx$missingName)
+    return(ifelse(result$exists, "ISSUE_CLOSED", "ISSUE_OPEN"))
 }
