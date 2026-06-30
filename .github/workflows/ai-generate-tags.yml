@@ -195,7 +195,7 @@ jobs:
             COL_STATUS="UNKNOWN"
             if [ -n "$GBIF_USER" ] && [ -n "$GBIF_PWD" ]; then
               set +e
-              R_OUTPUT=$(Rscript ./automation/process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
+              R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
               R_EXIT_CODE=$?
               set -e
               

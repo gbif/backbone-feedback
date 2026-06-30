@@ -55,8 +55,8 @@ jobs:
       - name: Remove report.tsv if it exists
         run: |
           ls
-          if [ -f "./automation/report.tsv" ]; then
-            rm ./automation/report.tsv
+          if [ -f "report.tsv" ]; then
+            rm report.tsv
           fi
 
       - name: Run issue check script
@@ -67,16 +67,16 @@ jobs:
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
           ls 
-          chmod +x ./automation/issue_check.sh
-          ./automation/issue_check.sh ${{ inputs.issue_number }}
+          chmod +x ./issue_check.sh
+          ./issue_check.sh ${{ inputs.issue_number }}
 
       - name: Check if report.tsv exists
         run: |
-          if [ -f "./automation/report.tsv" ]; then
-            echo "report.tsv exists in automation directory"
-            cat ./automation/report.tsv
+          if [ -f "report.tsv" ]; then
+            echo "report.tsv exists"
+            cat report.tsv
           else
-            echo "report.tsv does not exist in automation directory"
+            echo "report.tsv does not exist"
             exit 1  # Fail the job if the file is missing
           fi
 
@@ -85,6 +85,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             ls 
-            cd ./automation
             chmod +x ./create_github_label.sh
             ./create_github_label.sh || true
