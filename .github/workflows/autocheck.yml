@@ -58,6 +58,9 @@ jobs:
           if [ -f "report.tsv" ]; then
             rm report.tsv
           fi
+          if [ -f "./automation/report.tsv" ]; then
+            rm ./automation/report.tsv
+          fi
 
       - name: Run issue check script
         continue-on-error: true
@@ -69,6 +72,12 @@ jobs:
           ls 
           chmod +x ./automation/issue_check.sh
           ./automation/issue_check.sh ${{ inputs.issue_number }}
+          
+          # Copy report.tsv from automation directory to root
+          if [ -f "./automation/report.tsv" ]; then
+            cp ./automation/report.tsv ./report.tsv
+            echo "Copied report.tsv from automation directory"
+          fi
 
       - name: Check if report.tsv exists
         run: |
