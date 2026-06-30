@@ -55,9 +55,6 @@ jobs:
       - name: Remove report.tsv if it exists
         run: |
           ls
-          if [ -f "report.tsv" ]; then
-            rm report.tsv
-          fi
           if [ -f "./automation/report.tsv" ]; then
             rm ./automation/report.tsv
           fi
@@ -72,20 +69,14 @@ jobs:
           ls 
           chmod +x ./automation/issue_check.sh
           ./automation/issue_check.sh ${{ inputs.issue_number }}
-          
-          # Copy report.tsv from automation directory to root
-          if [ -f "./automation/report.tsv" ]; then
-            cp ./automation/report.tsv ./report.tsv
-            echo "Copied report.tsv from automation directory"
-          fi
 
       - name: Check if report.tsv exists
         run: |
-          if [ -f "report.tsv" ]; then
-            echo "report.tsv exists"
-            cat report.tsv
+          if [ -f "./automation/report.tsv" ]; then
+            echo "report.tsv exists in automation directory"
+            cat ./automation/report.tsv
           else
-            echo "report.tsv does not exist"
+            echo "report.tsv does not exist in automation directory"
             exit 1  # Fail the job if the file is missing
           fi
 
@@ -94,5 +85,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             ls 
-            chmod +x ./automation/create_github_label.sh
-            ./automation/create_github_label.sh || true
+            cd ./automation
+            chmod +x ./create_github_label.sh
+            ./create_github_label.sh || true
