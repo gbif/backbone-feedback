@@ -32,19 +32,19 @@ jobs:
 
       - name: Install specific R packages
         run: |
-          Rscript -e "pak::pak(c('httr', 'dplyr', 'tibble','purrr', 'jsonlite','testthat'))"
+          Rscript -e "pak::pak(c('httr', 'dplyr', 'tibble','purrr', 'jsonlite','testthat', 'devtools'))"
       
-      - name: Check if httr is installed
+      - name: Install gbifbf package
         run: |
-          Rscript -e "if (!requireNamespace('httr', quietly = TRUE)) { stop('httr is NOT installed') } else { message('httr is installed') }"    
+          R CMD INSTALL gbifbf
       
-      - name: Run simple-tests
+      - name: Run gbifbf package tests
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GBIF_USER: ${{ secrets.GBIF_USER }}
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
-          Rscript tests/simple-tests.R
+          Rscript -e "testthat::test_dir('gbifbf/tests/testthat')"
 
       - name: Remove report.tsv if it exists
         run: |
