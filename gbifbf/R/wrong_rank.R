@@ -10,9 +10,22 @@ wrong_rank = function(xx) {
     
     # Get full details directly from cb_name_usage
     n = cb_name_usage(xx$name)$usage
+    
+    # If cb_name_usage didn't find it (empty result), use the ID from name_exists
+    if(nrow(n) == 0 || !("rank" %in% names(n))) {
+        gbif_message("Using ID lookup for: ", xx$name, " (ID: ", result$id, ")")
+        n = cb_get_taxon_by_id(result$id)
+        if(nrow(n) == 0) return("JSON-TAG-ERROR")
+    }
+    
     r = n$rank[n$labelHtml == xx$name]
-    if(length(r) == 0 || is.null(r) || is.na(r[1])) return("JSON-TAG-ERROR")
-    r = r[1]  # Take first if multiple
+    if(length(r) == 0) {
+        # If exact match not found in labelHtml, just use the first rank
+        r = n$rank[1]
+    } else {
+        r = r[1]  # Take first if multiple
+    }
+    if(is.null(r) || is.na(r)) return("JSON-TAG-ERROR")
     
     
     if(!is.null(xx$wrongRank) & !is.null(xx$rightRank)) {

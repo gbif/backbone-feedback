@@ -7,6 +7,11 @@ gbif_message <- function(...) {
   }
 }
 
+# Null-coalescing operator
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
+}
+
 #' Strip HTML tags from text
 #'
 #' Helper function to remove HTML tags from labelHtml fields
@@ -17,6 +22,38 @@ strip_html <- function(html_text) {
   if(is.null(html_text) || length(html_text) == 0) return(html_text)
   # Remove HTML tags
   gsub("<[^>]+>", "", html_text)
+}
+
+# Get taxon details by ID
+cb_get_taxon_by_id <- function(id, key = "3LXRC") {
+  # https://api.checklistbank.org/dataset/3LXRC/nameusage/8HRN9
+  url <- paste0("https://api.checklistbank.org/dataset/", key, "/nameusage/", id)
+  
+  user <- Sys.getenv("GBIF_USER")
+  pwd <- Sys.getenv("GBIF_PWD")
+  
+  result <- httr::GET(url,
+                      httr::authenticate(user, pwd)) |>
+    httr::content(as = "text", encoding = "UTF-8") |>
+    jsonlite::fromJSON(flatten = TRUE)
+  
+  # Extract usage information and format like cb_name_usage does
+  if(!is.null(result)) {
+    usage <- tibble::tibble(
+      id = result$id,
+      status = result$status,
+      labelHtml = strip_html(result$labelHtml),
+      label = result$label,
+      parentId = result$parentId %||% NA_character_,
+      rank = result$name$rank %||% NA_character_,
+      name = result$name$scientificName %||% NA_character_,
+      authorship = result$name$authorship %||% NA_character_
+    )
+    return(usage)
+  }
+  
+  # Return empty tibble if not found
+  return(tibble::tibble())
 }
 
 # Parse a taxonomic name

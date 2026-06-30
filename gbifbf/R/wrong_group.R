@@ -38,6 +38,21 @@ wrong_group = function(xx) {
     # Get full details directly from cb_name_usage
     n = cb_name_usage(xx$name)
     
+    # If cb_name_usage didn't find it (empty result), use the ID from name_exists
+    # For wrong_group, we need classification which isn't in cb_get_taxon_by_id
+    # So we try cb_name_usage with the ID's label instead
+    if(nrow(n$usage) == 0 || is.null(n$usage$classification)) {
+        gbif_message("cb_name_usage failed, trying ID lookup for: ", xx$name, " (ID: ", result$id, ")")
+        # Get taxon details by ID
+        taxon_details = cb_get_taxon_by_id(result$id)
+        if(nrow(taxon_details) == 0) return("JSON-TAG-ERROR")
+        # Now try cb_name_usage with the exact label from the taxon
+        n = cb_name_usage(taxon_details$label[1])
+        if(nrow(n$usage) == 0 || is.null(n$usage$classification)) {
+            return("JSON-TAG-ERROR")
+        }
+    }
+    
     # Extract parents from classification  
     # classification$labelHtml is a list-column, take the first element
     parents = n$usage$classification$labelHtml
