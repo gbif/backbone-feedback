@@ -17,8 +17,11 @@ gbif_message <- function(...) {
 #' @param verbose Logical; if TRUE, print diagnostic messages about search strategies.
 #'   Defaults to FALSE. Messages also respect the global \code{gbifbf.verbose} option.
 #'
-#' @return Logical: TRUE if the exact name string is found in ChecklistBank,
-#'   FALSE otherwise
+#' @return A list with two elements:
+#'   \describe{
+#'     \item{exists}{Logical: TRUE if the exact name string is found, FALSE otherwise}
+#'     \item{id}{Character: The ChecklistBank ID (e.g., "TJ8H5") if found, NA_character_ if not found}
+#'   }
 #'
 #' @details
 #' This function employs multiple search strategies to locate a name:
@@ -35,9 +38,14 @@ gbif_message <- function(...) {
 #'
 #' @examples
 #' \dontrun{
-#' name_exists("Trichopria carinata (Thomson, 1858)")
-#' name_exists("Fake name that does not exist")
-#' name_exists("Trichopria aequata (Thomson, 1858)", verbose = TRUE)
+#' result <- name_exists("Trichopria carinata (Thomson, 1858)")
+#' # result$exists = TRUE, result$id = "TJ8P3"
+#' 
+#' result <- name_exists("Fake name that does not exist")
+#' # result$exists = FALSE, result$id = NA
+#' 
+#' result <- name_exists("Trichopria aequata (Thomson, 1858)", verbose = TRUE)
+#' # result$exists = TRUE, result$id = "TJ8H5"
 #' }
 #'
 #' @export
@@ -57,18 +65,22 @@ name_exists <- function(name, verbose = FALSE) {
   
   # Check primary results for exact match
   if(nrow(n$usage) > 0) {
-    if(name %in% n$usage$labelHtml) {
-      gbif_message("Found exact match in primary results")
-      return(TRUE)
+    match_idx <- which(n$usage$labelHtml == name)
+    if(length(match_idx) > 0) {
+      col_id <- n$usage$id[match_idx[1]]
+      gbif_message("Found exact match in primary results (ID: ", col_id, ")")
+      return(list(exists = TRUE, id = col_id))
     }
   }
   
   # Strategy 2: Check alternatives
   gbif_message("Strategy 2: Checking alternatives")
   if(nrow(n$alternatives) > 0) {
-    if(name %in% n$alternatives$labelHtml) {
-      gbif_message("Found exact match in alternatives")
-      return(TRUE)
+    match_idx <- which(n$alternatives$labelHtml == name)
+    if(length(match_idx) > 0) {
+      col_id <- n$alternatives$id[match_idx[1]]
+      gbif_message("Found exact match in alternatives (ID: ", col_id, ")")
+      return(list(exists = TRUE, id = col_id))
     }
   }
   
@@ -83,17 +95,21 @@ name_exists <- function(name, verbose = FALSE) {
     
     # Check if exact name is in base name search results
     if(nrow(n_base$usage) > 0) {
-      if(name %in% n_base$usage$labelHtml) {
-        gbif_message("Found exact match via base name search in primary results")
-        return(TRUE)
+      match_idx <- which(n_base$usage$labelHtml == name)
+      if(length(match_idx) > 0) {
+        col_id <- n_base$usage$id[match_idx[1]]
+        gbif_message("Found exact match via base name search in primary results (ID: ", col_id, ")")
+        return(list(exists = TRUE, id = col_id))
       }
     }
     
     # Check alternatives from base name search
     if(nrow(n_base$alternatives) > 0) {
-      if(name %in% n_base$alternatives$labelHtml) {
-        gbif_message("Found exact match via base name search in alternatives")
-        return(TRUE)
+      match_idx <- which(n_base$alternatives$labelHtml == name)
+      if(length(match_idx) > 0) {
+        col_id <- n_base$alternatives$id[match_idx[1]]
+        gbif_message("Found exact match via base name search in alternatives (ID: ", col_id, ")")
+        return(list(exists = TRUE, id = col_id))
       }
     }
   }
@@ -110,23 +126,27 @@ name_exists <- function(name, verbose = FALSE) {
     
     # Check if exact ORIGINAL name is in normalized search results
     if(nrow(n_norm$usage) > 0) {
-      if(name %in% n_norm$usage$labelHtml) {
-        gbif_message("Found exact match via normalized search in primary results")
-        return(TRUE)
+      match_idx <- which(n_norm$usage$labelHtml == name)
+      if(length(match_idx) > 0) {
+        col_id <- n_norm$usage$id[match_idx[1]]
+        gbif_message("Found exact match via normalized search in primary results (ID: ", col_id, ")")
+        return(list(exists = TRUE, id = col_id))
       }
     }
     
     if(nrow(n_norm$alternatives) > 0) {
-      if(name %in% n_norm$alternatives$labelHtml) {
-        gbif_message("Found exact match via normalized search in alternatives")
-        return(TRUE)
+      match_idx <- which(n_norm$alternatives$labelHtml == name)
+      if(length(match_idx) > 0) {
+        col_id <- n_norm$alternatives$id[match_idx[1]]
+        gbif_message("Found exact match via normalized search in alternatives (ID: ", col_id, ")")
+        return(list(exists = TRUE, id = col_id))
       }
     }
   }
   
   # Name not found
   gbif_message("Name not found in ChecklistBank")
-  return(FALSE)
+  return(list(exists = FALSE, id = NA_character_))
 }
 
 #' Strip HTML tags from text

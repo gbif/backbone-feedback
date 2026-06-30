@@ -3,19 +3,24 @@
 test_that("name_exists finds existing accepted names", {
   # Test with a known accepted name
   result <- name_exists("Trichopria aequata (Thomson, 1858)")
-  expect_true(result)
+  expect_true(result$exists)
+  expect_type(result$id, "character")
+  expect_false(is.na(result$id))
 })
 
 test_that("name_exists finds existing synonym names", {
   # Test with a known synonym
   result <- name_exists("Trichopria carinata (Thomson, 1858)")
-  expect_true(result)
+  expect_true(result$exists)
+  expect_type(result$id, "character")
+  expect_false(is.na(result$id))
 })
 
 test_that("name_exists returns FALSE for non-existent names", {
   # Test with a completely fake name
   result <- name_exists("Fakeus nonexistus Smith, 2099")
-  expect_false(result)
+  expect_false(result$exists)
+  expect_true(is.na(result$id))
 })
 
 test_that("name_exists returns FALSE for partial matches", {
@@ -24,13 +29,15 @@ test_that("name_exists returns FALSE for partial matches", {
   result <- name_exists("Trichopria")
   # This should work if Trichopria is a valid genus
   # If it returns TRUE, that's fine - it means the genus exists as exact match
-  expect_type(result, "logical")
+  expect_type(result$exists, "logical")
+  expect_type(result$id, "character")
 })
 
 test_that("name_exists handles names with special characters", {
   # Test with various author string formats
   result <- name_exists("Diapria aequata Thomson, 1859")
-  expect_type(result, "logical")
+  expect_type(result$exists, "logical")
+  expect_type(result$id, "character")
 })
 
 test_that("name_exists verbose mode works", {
@@ -45,18 +52,29 @@ test_that("name_exists works with names found via base name parsing", {
   # If a name is registered with different author string format,
   # base name parsing should help find it
   result <- name_exists("Trichopria carinata (Thomson, 1858)")
-  expect_true(result)
+  expect_true(result$exists)
+  expect_false(is.na(result$id))
 })
 
 test_that("name_exists returns FALSE for typos", {
   # Test that typos don't match
   result <- name_exists("Trichopria carinata (Thornson, 1858)")  # Note: Thornson vs Thomson
-  expect_false(result)
+  expect_false(result$exists)
+  expect_true(is.na(result$id))
 })
 
 test_that("name_exists handles whitespace normalization", {
   # Test with extra spaces
   result <- name_exists("Trichopria  aequata  (Thomson, 1858)")
   # Should still find it via normalization, then exact match
-  expect_type(result, "logical")
+  expect_type(result$exists, "logical")
+  expect_type(result$id, "character")
+})
+
+test_that("name_exists returns consistent ID for same name", {
+  # Test that the same name always returns the same ID
+  result1 <- name_exists("Trichopria aequata (Thomson, 1858)")
+  result2 <- name_exists("Trichopria aequata (Thomson, 1858)")
+  expect_equal(result1$id, result2$id)
+  expect_equal(result1$exists, result2$exists)
 })

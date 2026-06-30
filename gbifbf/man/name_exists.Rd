@@ -13,8 +13,11 @@ name_exists(name, verbose = FALSE)
 Defaults to FALSE. Messages also respect the global \code{gbifbf.verbose} option.}
 }
 \value{
-Logical: TRUE if the exact name string is found in ChecklistBank,
-  FALSE otherwise
+A list with two elements:
+  \describe{
+    \item{exists}{Logical: TRUE if the exact name string is found, FALSE otherwise}
+    \item{id}{Character: The ChecklistBank ID (e.g., "TJ8H5") if found, NA_character_ if not found}
+  }
 }
 \description{
 General purpose function to verify whether a taxonomic name string exists
@@ -36,9 +39,14 @@ before returning TRUE. Partial matches or similar names do not count.
 }
 \examples{
 \dontrun{
-name_exists("Trichopria carinata (Thomson, 1858)")
-name_exists("Fake name that does not exist")
-name_exists("Trichopria aequata (Thomson, 1858)", verbose = TRUE)
+result <- name_exists("Trichopria carinata (Thomson, 1858)")
+# result$exists = TRUE, result$id = "TJ8P3"
+
+result <- name_exists("Fake name that does not exist")
+# result$exists = FALSE, result$id = NA
+
+result <- name_exists("Trichopria aequata (Thomson, 1858)", verbose = TRUE)
+# result$exists = TRUE, result$id = "TJ8H5"
 }
 
 }
