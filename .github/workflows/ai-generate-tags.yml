@@ -189,51 +189,6 @@ jobs:
             echo "Generated JSON tags:"
             echo "$RESULT"
             
-            # Check COL status
-            echo "$RESULT" > /tmp/temp_json.txt
-            
-            COL_STATUS="UNKNOWN"
-            if [ -n "$GBIF_USER" ] && [ -n "$GBIF_PWD" ]; then
-              set +e
-              R_OUTPUT=$(Rscript process_json.R "/tmp/temp_json.txt" "${issue_number}" 2>&1)
-              R_EXIT_CODE=$?
-              set -e
-              
-              if [ $R_EXIT_CODE -eq 0 ]; then
-                COL_STATUS=$(echo "$R_OUTPUT" | tail -n 1 | tr -d '\n')
-                echo "COL status: $COL_STATUS"
-              else
-                COL_STATUS="CHECK_FAILED"
-                echo "COL check failed"
-              fi
-            else
-              COL_STATUS="CREDENTIALS_MISSING"
-            fi
-            
-            # Prepare status text
-            case "$COL_STATUS" in
-              "ISSUE_OPEN")
-                STATUS_EMOJI="🔴"
-                STATUS_TEXT="Open in COL - Issue still exists in Catalogue of Life"
-                ;;
-              "ISSUE_CLOSED")
-                STATUS_EMOJI="✅"
-                STATUS_TEXT="Closed in COL - Issue appears to be fixed in Catalogue of Life"
-                ;;
-              "CREDENTIALS_MISSING")
-                STATUS_EMOJI="⚠️"
-                STATUS_TEXT="COL check skipped - GBIF credentials not configured"
-                ;;
-              "CHECK_FAILED")
-                STATUS_EMOJI="⚠️"
-                STATUS_TEXT="COL status check failed - see workflow logs for details"
-                ;;
-              *)
-                STATUS_EMOJI="⚠️"
-                STATUS_TEXT="Status: ${COL_STATUS}"
-                ;;
-            esac
-            
             # Build comment body and save to file
             {
               echo "## 🤖 Proposed JSON Tags"
@@ -241,10 +196,6 @@ jobs:
               echo "// json for auto-checking"
               echo "${RESULT}"
               echo "[why is this here?](https://github.com/gbif/backbone-feedback/wiki/JSON-comments-for-automation-%E2%80%90-Experimental)"
-              echo ""
-              echo "### ${STATUS_EMOJI} COL Status"
-              echo ""
-              echo "${STATUS_TEXT}"
               echo ""
               echo "### 📋 Review Actions"
               echo ""

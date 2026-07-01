@@ -52,13 +52,6 @@ jobs:
         run: |
           Rscript -e "testthat::test_dir('./automation/gbifbf/tests/testthat')"
 
-      - name: Remove report.tsv if it exists
-        run: |
-          ls
-          if [ -f "report.tsv" ]; then
-            rm report.tsv
-          fi
-
       - name: Run issue check script
         continue-on-error: true
         env:
@@ -67,23 +60,5 @@ jobs:
           GBIF_PWD: ${{ secrets.GBIF_PWD }}
         run: |
           ls 
-          chmod +x ./issue_check.sh
-          ./issue_check.sh ${{ inputs.issue_number }}
-
-      - name: Check if report.tsv exists
-        run: |
-          if [ -f "report.tsv" ]; then
-            echo "report.tsv exists"
-            cat report.tsv
-          else
-            echo "report.tsv does not exist"
-            exit 1  # Fail the job if the file is missing
-          fi
-
-      - name: Run issue label script
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-            ls 
-            chmod +x ./create_github_label.sh
-            ./create_github_label.sh || true
+          chmod +x ./automation/issue_check.sh
+          ./automation/issue_check.sh ${{ inputs.issue_number }}
