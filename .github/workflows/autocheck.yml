@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   feedback:
     runs-on: ubuntu-latest
@@ -28,6 +32,13 @@ jobs:
     
       - name: Check GitHub CLI version
         run: gh --version
+      
+      - name: Authenticate GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth status
           
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
@@ -53,7 +64,6 @@ jobs:
           Rscript -e "testthat::test_dir('./automation/gbifbf/tests/testthat')"
 
       - name: Run issue check script
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GBIF_USER: ${{ secrets.GBIF_USER }}
@@ -61,4 +71,6 @@ jobs:
         run: |
           ls 
           chmod +x ./automation/issue_check.sh
+          chmod +x ./automation/create_github_label.sh
+          chmod +x ./automation/process_json.R
           ./automation/issue_check.sh ${{ inputs.issue_number }}
