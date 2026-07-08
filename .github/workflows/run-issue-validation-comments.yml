@@ -104,7 +104,7 @@ jobs:
           # Fetch new issues created after the calculated date
           NEW_ISSUES=$(gh issue list \
             --repo gbif/backbone-feedback \
-            --search "is:issue is:open project:gbif/23 created:>=$SEVEN_DAYS_AGO" \
+            --search "is:issue is:open created:>=$SEVEN_DAYS_AGO" \
             --json number \
             --jq '.[].number' \
             --limit 500)
@@ -188,7 +188,7 @@ jobs:
           # Fetch old issues created before the calculated date
           OLD_ISSUES=$(gh issue list \
             --repo gbif/backbone-feedback \
-            --search "is:issue is:open project:gbif/23 created:<$SEVEN_DAYS_AGO" \
+            --search "is:issue is:open created:<$SEVEN_DAYS_AGO" \
             --json number \
             --jq '.[].number' \
             --limit 500)
