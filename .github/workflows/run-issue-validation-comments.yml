@@ -66,7 +66,7 @@ jobs:
       
       - name: Install R dependencies
         run: |
-          Rscript -e 'install.packages(c("jsonlite", "httr", "dplyr", "xml2", "stringr"))'
+          Rscript -e 'install.packages(c("jsonlite", "httr", "dplyr", "xml2", "stringr", "purrr", "tibble", "testthat", "devtools"))'
       
       - name: Install gbifbf package
         run: |
@@ -152,7 +152,7 @@ jobs:
       
       - name: Install R dependencies
         run: |
-          Rscript -e 'install.packages(c("jsonlite", "httr", "dplyr", "xml2", "stringr"))'
+          Rscript -e 'install.packages(c("jsonlite", "httr", "dplyr", "xml2", "stringr", "purrr", "tibble", "testthat", "devtools"))'
       
       - name: Install gbifbf package
         run: |
