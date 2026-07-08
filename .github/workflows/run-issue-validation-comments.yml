@@ -29,7 +29,10 @@ jobs:
   check-new-issues:
     # Run on: manual trigger with 'new', 'all', or single issue; or daily schedule
     if: |
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.issue_number != '' || 
+        github.event.inputs.issue_type == 'new' || 
+        github.event.inputs.issue_type == 'all')) ||
       github.event.schedule == '0 2 * * *'
     
     runs-on: ubuntu-latest
@@ -61,7 +64,7 @@ jobs:
       
       - name: Install gbifbf package
         run: |
-          Rscript -e 'install.packages("./gbifbf", repos = NULL, type = "source")'
+          R CMD INSTALL ./automation/gbifbf
       
       - name: Make scripts executable
         run: |
@@ -103,19 +106,12 @@ jobs:
             echo "Processing issue #$issue"
             bash issue_check.sh --report-comment $issue || echo "Failed to process issue #$issue"
           done
-      
-      - name: Upload report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: new-issues-report-${{ github.run_number }}
-          path: report.tsv
-          retention-days: 30
 
   check-old-issues:
-    # Run on: manual trigger with 'old' or 'all'; or monthly schedule
+    # Run on: manual trigger with 'old' or 'all' (but NOT single issue); or monthly schedule
     if: |
       (github.event_name == 'workflow_dispatch' && 
+       github.event.inputs.issue_number == '' &&
        (github.event.inputs.issue_type == 'old' || github.event.inputs.issue_type == 'all')) ||
       github.event.schedule == '0 3 1 * *'
     
@@ -148,7 +144,7 @@ jobs:
       
       - name: Install gbifbf package
         run: |
-          Rscript -e 'install.packages("./gbifbf", repos = NULL, type = "source")'
+          R CMD INSTALL ./automation/gbifbf
       
       - name: Make scripts executable
         run: |
@@ -183,11 +179,3 @@ jobs:
             echo "Processing issue #$issue"
             bash issue_check.sh --report-comment $issue || echo "Failed to process issue #$issue"
           done
-      
-      - name: Upload report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: old-issues-report-${{ github.run_number }}
-          path: report.tsv
-          retention-days: 30
